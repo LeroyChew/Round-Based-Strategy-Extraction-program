@@ -7,4 +7,8 @@
 #include "Logic.h"
 #include "Index.h"
 #include "Definitions.h"
+#include "MultiLinear.h"
+#include "Connectivity.h"
+#include "Independence.h"
+#include "File.h"
 // TODO: Reference additional headers your program requires here.

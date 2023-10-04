@@ -22,7 +22,7 @@ public:
 
 
 
-template <typename T> struct LinkL {
+template <typename T> struct LinkL{
 	Link1<T>* head;
 	Link1<T>* tail;
 	int length;
@@ -47,6 +47,37 @@ template <typename T> struct LinkL {
 		temp->prev = tail;
 		tail = temp;
 		length++;
+	}
+
+	void insertafter(Link1<T>* anchor, T new_entry ) {
+		Link1<T>* temp = new Link1<T>(new_entry);
+		temp->prev = anchor;
+		if (anchor == NULL) {
+			temp->position = 0;
+			temp->next = head;
+			head = temp;
+			//attach to head
+		}
+		else {
+			temp->position = anchor->position + 1;
+			Link1<T>* temp_next = anchor->next;
+			temp->next = temp_next;
+			anchor->next = temp;
+			
+			//attach
+		}
+		if (temp->next = NULL) {
+			tail = temp;
+		}
+		else {
+			temp->next->prev = temp;
+		}
+		//change position of subsequent
+		Link1<T>* current = temp->next;
+		while (current != NULL) {
+			current->position = current->position + 1;
+			current = current->next;
+		}
 	}
 
 	void rmvnode(Link1 <T>* rmvable) {
@@ -88,6 +119,7 @@ template <typename T> struct LinkL {
 			current = current->next;
 			idx--;
 		}
+		 return current;
 	}
 
 	T operator [](int idx) {

@@ -5,12 +5,21 @@ namespace idx {
 	struct Index1_1 {// house for each membership literal
 		bool is_membership_defined;
 		Var membership;
+		Cnf* def_membership;
 		Lit lit;
+
+
+		bool* is_overlevel_proved;
+		Cnf* proof_overlevel;
 
 		Index1_1() {
 			is_membership_defined = 0;
 			membership = 0;
 			lit = Lit();
+			def_membership = new Cnf;
+			is_overlevel_proved = new bool;
+			*is_overlevel_proved = 0;
+			proof_overlevel = new Cnf();
 		}
 	};
 
@@ -20,66 +29,151 @@ namespace idx {
 		bool is_selon_defined;
 		bool is_selval_defined;
 
+		
 		LinkL<Index1_1>* memberships;
+		
 
 		Var membership_start;
 		Var membership_end;
 		Var tautological;
-
+		Cnf* def_tautological;
 		
 		Var selon;
+		Cnf* def_selon;
 		Var selval;
+		Cnf* def_selval;
 
 		Index1() {
 			is_membership_defined=0;
 			is_tautological_defined=0;
 			is_selon_defined=0;
 			is_selval_defined=0;
+			
 			membership_start=0;
 			membership_end = 0;
 			tautological = 0;
 			selon=0;
 			selval = 0;
 			memberships = new LinkL < Index1_1>;
+			def_tautological= new Cnf;
+			def_selon= new Cnf;
+			def_selval= new Cnf;
+			
+		}
+	};
+
+	struct Index2_1 { //house for children of line_1
+		int line_no;
+		int parent;
+		int polarity;
+		bool* is_adequivalence_proven;
+		bool* is_line2child_proven;
+		Cnf* adequivalence0;//aselval and dselval are equivalent
+		Cnf* line2child; //dselval clauses for Parents and C, where C is second argument, changes from res to red
+
+
+		Index2_1() {
+			line_no = -1;
+			parent = NULL;
+			polarity = -1;
+			is_adequivalence_proven = new bool();
+			*is_adequivalence_proven = 0;
+			is_line2child_proven = new bool();
+			*is_line2child_proven = 0;
+		}
+
+
+		Index2_1(int line_no, int parent, int polarity)
+			: line_no(line_no), parent(parent), polarity(polarity)
+		{
+		}
+
+		Index2_1(int line_no, int parent, int polarity,  Cnf* adequivalence0, Cnf* line2child)
+			: line_no(line_no), parent(parent), polarity(polarity),  adequivalence0(adequivalence0), line2child(line2child)
+		{
+		}
+	};
+
+	struct Index2_2 {//house for literals when showing independence
+		Lit l;
+		bool* is_independence_proved;
+		Cnf* proof_independence;
+
+	
+
+		Index2_2(){
+			Lit l = Lit(0);
+			is_independence_proved = new bool;
+			*is_independence_proved = 0;
+			proof_independence = new Cnf();
+			
 		}
 	};
 
 	struct Index2 { //house for each pair of lines
 		bool is_descendant_defined;
 		bool is_ancestor_defined;
-		bool is_xselon_defined;
 		bool is_xselval0_defined;
 		bool is_xselval1_defined;
 
+		bool* is_a_equals_d_proved;
+
 		Var descendant;
+		Cnf* def_descendant;
 		Var ancestor;
-		Var xselon;
-		Var xselval1;
-		Var xselval0;
+		Cnf* def_ancestor;
+		//Var xselon;
+		Var aselval1;
+		Cnf* def_aselval1;
+		Var aselval0;
+		Cnf* def_aselval0;
+		Var dselval0;
+		Cnf* def_dselval0;
+		Var dselval1;
+		Cnf* def_dselval1;
+
+		Cnf* proof_a_equals_d;
+
+		LinkL<Index2_1>* childrenof1;
+		LinkL<Index2_2>* indep_literals;
 
 		Index2() {
 			is_descendant_defined=0;
 			is_ancestor_defined = 0;
-			is_xselon_defined = 0;
 			is_xselval0_defined = 0;
 			is_xselval1_defined = 0;
+			is_a_equals_d_proved = new bool();
+			*is_a_equals_d_proved = 0;
 			descendant = 0;
 			ancestor = 0;
-			xselon = 0;
-			xselval1 = 0;
-			xselval0 = 0;
+			//xselon = 0;
+			aselval1 = 0;
+			aselval0 = 0;
+			dselval1 = 0;
+			dselval0 = 0;
+			def_descendant = new Cnf;
+			def_ancestor = new Cnf;
+			def_aselval1 = new Cnf;
+			def_aselval0 = new Cnf;
+			def_dselval1 = new Cnf;
+			def_dselval0 = new Cnf;
+			childrenof1 = new LinkL<Index2_1>;
+			proof_a_equals_d = new Cnf;
 		}
 	};
 
 	struct Index3_1 { //house for each axiom
 		bool is_xmembershipdefined;
 		Var xmembership;
+		Cnf* def_xmembership;
 		int line_no;
 
 		Index3_1() {
 			is_xmembershipdefined = 0;
 			xmembership = 0;
 			line_no = -1;
+			def_xmembership= new Cnf;
+
 		}
 
 	};
@@ -87,12 +181,14 @@ namespace idx {
 	struct Index3 { //house for each universal variable
 		bool is_xmembership_defined;
 		bool is_strategy_defined;
+		Var u;
 
 		LinkL<Index3_1> * disjuncts;
 
 		Var xmembership_start;
 		Var xmembership_end;
 		Var strategy;
+		Cnf* def_strategy;
 
 		Index3() {
 			is_xmembership_defined = 0;
@@ -101,11 +197,114 @@ namespace idx {
 			xmembership_start = 0;
 			xmembership_end = 0;
 			strategy = 0;
+			def_strategy = new Cnf;
 
 			disjuncts = new LinkL <Index3_1>;
 		}
 
 	};
+
+	struct Index4_1 {
+		Lit entry_lit;
+		int entry_lit_pos;
+		bool is_drrs_calculated;
+		LinkL<Lit>* DrrsLits;
+	};
+
+	struct Index4 {
+		int drrs_calculated;
+		Clause* clause;
+		LinkL<Lit>* DrrsLits;
+		LinkL<Index4_1>* entrycases;
+
+		Index4() {
+			int drrs_calculated = 0;
+			Clause* clause= new Clause();
+			DrrsLits = new LinkL< Lit>;
+			entrycases = new LinkL<Index4_1>;
+		}
+
+		int reverse_entry_index(Lit l) {
+			if (entrycases == NULL) {
+				return -2;
+			}
+			Link1<Index4_1>* current = entrycases->head;
+			int i = 0;
+			while (current != NULL) {
+				if (current->data.entry_lit == l) {
+					return i;
+				}
+				i++;
+				current = current->next;
+			}
+			return -1;
+
+		}
+	};
+
+
+	//made after long break may be buggy
+	void drrs_axiom_entry(Lit entry, Link1<Index4>* input, LinkL<Index4>* axioms, int level, Prefix* pi) {
+		Link1<Index4>* currentI = axioms->head;
+		while (currentI != NULL) {
+			Link1<Lit>* current_lit_other = currentI->data.clause->head;
+			while (current_lit_other != NULL) {
+				Link1<Lit>* current_lit_self = input->data.clause->head;
+				Lit q = current_lit_other->data;
+				if (pi->lvl(q.var) > level) {
+					while (current_lit_self != NULL) {
+						current_lit_self = current_lit_self->next;
+						Lit p = current_lit_self->data;
+						if (p == -q) {
+							drrs_axiom_entry(-p, currentI, axioms, level, pi);
+							int q_pos = currentI->data.reverse_entry_index(-p);
+							//need to modify Linked List to concatenate;
+						}
+					}
+				}
+				current_lit_other = current_lit_other->next;
+			}
+
+			currentI = currentI->next;
+		}
+	}
+
+	void drrs_axiom(Link1<Index4>* input, LinkL<Index4>* axioms, int level, Prefix* pi) {
+		Link1<Index4>* currentI = axioms->head;
+		while (currentI != NULL) {
+			Link1<Lit>* current_lit_other = currentI->data.clause->head;
+			while (current_lit_other != NULL) {
+				Link1<Lit>* current_lit_self = input->data.clause->head;
+				Lit q = current_lit_other->data;
+				if (pi->lvl(q.var)> level){
+				while (current_lit_self != NULL) {
+					current_lit_self = current_lit_self->next;
+					Lit p = current_lit_self->data;
+					if (p==-q) {
+						drrs_axiom_entry(-p, currentI, axioms, level, pi);
+					}
+				}
+				}
+				current_lit_other = current_lit_other->next;
+			}
+			
+			currentI = currentI->next;
+		}
+	}
+
+	void drrs_axioms(LinkL<Index4>* axioms, int level, Prefix* pi) {
+		Link1<Index4>* current = axioms->head;
+		while (current != NULL) {
+			drrs_axiom(current, axioms, level, pi);
+			current = current->next;
+		}
+	}
+
+
+	void calculate_drrs(Index4* input, LinkL<Index4>* axioms, Prefix* Pi) {
+
+	}
+
 
 	void increment(Var* max_var, Prefix* P, Var* idx) {//adds a new extension variable
 		int new_val= *max_var+1;
@@ -128,6 +327,12 @@ namespace idx {
 		Clause C = L.clause;
 		Link1<Lit>* current = C.head;
 		int position = 0;
+
+		if (L.rule == RESOLUTION) {
+			increment(&max_var, P, &(temp->selon));
+			increment(&max_var, P, &(temp->selval));
+		}
+		increment(&max_var, P, &(temp->tautological));
 		if (C.length > 0) {
 			temp->membership_start = max_var + 1;
 			while (current != NULL) {
@@ -137,16 +342,14 @@ namespace idx {
 			}
 			temp->membership_end = max_var;
 		}
-		increment(&max_var, P, &(temp->tautological));
+		
 		//if res
-		if (L.rule == RESOLUTION) {
-			increment(&max_var, P, &(temp->selon));
-			increment(&max_var, P, &(temp->selval));
-		}
+		
 		//
 		idx_layer->addnode(*temp);
 		return max_var;
 	}
+
 
 	int add_layer1(Var max_var, LinkL<LinkL<Index1> >* idx_proof, Prefix* P, ClausalProof* pi) {
 		LinkL<Index1>* temp = new LinkL<Index1>();
@@ -161,19 +364,24 @@ namespace idx {
 		return max_var;
 	};
 
-	int add_cell2(Var max_var, LinkL<Index2>* idx_row, Prefix* P, ClausalProof* pi, int line_no) {
+	int add_cell2(Var max_var, LinkL<Index2>* idx_row, Prefix* P, ClausalProof* pi, int line_no1, int line_no2) {
 		Index2* temp = new Index2;
 		increment(&max_var, P, &(temp->descendant));
+		if (pi->operator[](line_no1).rule == RESOLUTION) {
+			increment(&max_var, P, &(temp->dselval0));
+			increment(&max_var, P, &(temp->dselval1));
+		}
 		idx_row->addnode(*temp);
 		return max_var;
 	}
 
 	int add_row2(Var max_var, LinkL<LinkL<Index2>>* idx_array, Prefix* P, ClausalProof* pi, int line_no) {
 		LinkL<Index2>* temp = new LinkL<Index2>;
-		Link1<Line<Clause>>* current = pi->findnode(line_no);
+		Link1<Line<Clause>>* current = pi->head;
+		int line_no2=0;
 		while (current != NULL) {
-			max_var = add_cell2(max_var, temp, P, pi, line_no);
-			line_no++;
+			max_var = add_cell2(max_var, temp, P, pi, line_no, line_no2);
+			line_no2++;
 			current = current->next;
 		}
 		idx_array->addnode(*temp);
@@ -184,14 +392,14 @@ namespace idx {
 		//start at bot, bot
 		int botpos = pi->tail->position;
 		for (int j = botpos; j >= 0; j--) {//j is the second (column) index 
-			for (int i = j; i >= 0; i--) {//i is the first (row) index
+			for (int i = botpos; i >= 0; i--) {//i is the first (row) index
 				LinkL <Index2> idx_row = idx_array->operator[](i);
-				Link1<Index2>* idx_cell = idx_row.findnode(j - i);
+				Link1<Index2>* idx_cell = idx_row.findnode(j);
 				increment(&max_var, P, &(idx_cell->data.ancestor));
 				if (pi->operator[](i).rule == RESOLUTION) {
-					increment(&max_var, P, &(idx_cell->data.xselon));
-					increment(&max_var, P, &(idx_cell->data.xselval0));
-					increment(&max_var, P, &(idx_cell->data.xselval1));
+					//increment(&max_var, P, &(idx_cell->data.xselon));
+					increment(&max_var, P, &(idx_cell->data.aselval0));
+					increment(&max_var, P, &(idx_cell->data.aselval1));
 				}
 
 			}
@@ -226,7 +434,9 @@ namespace idx {
 	}
 
 	int add_u3(Var max_var, LinkL<Index3>* idx_strat, Prefix* P, ClausalProof* pi, Var u) {
+
 		Index3* temp = new Index3();
+		temp->u = u;
 		Link1<Line<Clause>>* current = pi->head;
 		temp->xmembership_start = max_var + 1;
 		bool found_axiom = 0;
@@ -356,8 +566,8 @@ namespace idx {
 					display(DESCENDANT, i);
 					cout << "ancestor:\n";
 					display(ANCESTOR, i);
-					cout << "xselon:\n";
-					display(XANCESTORSELON, i);
+					//cout << "xselon:\n";
+					//display(XANCESTORSELON, i);
 					cout << "xselval0:\n";
 					display(XANCESTORSELVAL0, i);
 					cout << "xselval1:\n";
@@ -413,21 +623,21 @@ namespace idx {
 					cout << "line"<< row_no << "\t";
 					row_no++;
 					for (int i = 0;  i < layer.length; i++) {
-						if (i >= current_row->position) {
+						if (i >= 0) {
 							if ((a == DESCENDANT) && (current_cell->data.descendant > 0)) {
 								cout << current_cell->data.descendant;
 							}
 							if ((a == ANCESTOR) && (current_cell->data.ancestor > 0)) {
 								cout << current_cell->data.ancestor;
 							}
-							if ((a == XANCESTORSELON) && (current_cell->data.xselon > 0)) {
+							/*if ((a == XANCESTORSELON) && (current_cell->data.xselon > 0)) {
 								cout << current_cell->data.xselon;
+							}*/
+							if ((a == XANCESTORSELVAL0) && (current_cell->data.aselval0 > 0)) {
+								cout << current_cell->data.aselval0;
 							}
-							if ((a == XANCESTORSELVAL0) && (current_cell->data.xselval0 > 0)) {
-								cout << current_cell->data.xselval0;
-							}
-							if ((a == XANCESTORSELVAL1) && (current_cell->data.xselval1 > 0)) {
-								cout << current_cell->data.xselval1;
+							if ((a == XANCESTORSELVAL1) && (current_cell->data.aselval1 > 0)) {
+								cout << current_cell->data.aselval1;
 							}
 							current_cell = current_cell->next;
 						}
@@ -509,14 +719,14 @@ namespace idx {
 					if ((input.type == ANCESTOR) && (cell.ancestor > 0)) {
 						return Lit(cell.ancestor, b);
 					}
-					if ((input.type == XANCESTORSELON) && (cell.xselon > 0)) {
-						return Lit(cell.xselon, b);
+					//if ((input.type == XANCESTORSELON) && (cell.xselon > 0)) {
+					//	return Lit(cell.xselon, b);
+					//}
+					if ((input.type == XANCESTORSELVAL0) && (cell.aselval0 > 0)) {
+						return Lit(cell.aselval0, b);
 					}
-					if ((input.type == XANCESTORSELVAL0) && (cell.xselval0 > 0)) {
-						return Lit(cell.xselval0, b);
-					}
-					if ((input.type == XANCESTORSELVAL1) && (cell.xselval1 > 0)) {
-						return Lit(cell.xselval1, b);
+					if ((input.type == XANCESTORSELVAL1) && (cell.aselval1 > 0)) {
+						return Lit(cell.aselval1, b);
 					}
 				}
 			}

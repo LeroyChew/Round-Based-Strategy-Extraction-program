@@ -1,5 +1,6 @@
 #pragma once
 #include "Logic.h"
+#include<fstream>
 
 struct Quantifier {
 	bool is_universal;
@@ -56,9 +57,12 @@ struct Prefix : LinkL<Quantifier> {
 			if (current->data.var == v) {
 				return current->data.level;
 			}
+			current = current->next;
 		}
 		return 0;
 	}
+
+	
 
 	void display() {
 		Link1<Quantifier>* current = head;
@@ -75,6 +79,61 @@ struct Prefix : LinkL<Quantifier> {
 			}
 			cout << current->data.var <<" ";
 			current = current->next;
+		}
+	}
+
+	void print_qdimacs(const char* filename) {
+		fstream newfile;
+		newfile.open(filename, ios::app );
+		Link1<Quantifier>* current = head;
+		int lvl = 0;
+		while (current != NULL) {
+			if (current->data.level > lvl) {
+				lvl = current->data.level;
+				if (current->data.is_universal) {
+					newfile <<"a ";
+				}
+				else {
+					newfile <<"e ";
+				}
+			}
+			newfile << current->data.var << " ";
+			current = current->next;
+			if (current != NULL) {
+				if (current->data.level > lvl) {
+					newfile << "0" << "\n";
+				}
+			}
+			else {
+				newfile << "0" << "\n";
+			}
+		}
+	}
+
+	void print(FILE* file) {
+		Link1<Quantifier>* current = head;
+		int lvl = 0;
+		while (current != NULL) {
+			if (current->data.level > lvl) {
+				lvl = current->data.level;
+				if (current->data.is_universal) {
+					fprintf(file, "a ");
+				}
+				else {
+					fprintf(file, "e ");
+				}
+			}
+			fprintf(file, "%i", current->data.var);
+			fprintf(file, " ");
+			current = current->next;
+			if (current != NULL) {
+				if (current->data.level > lvl) {
+					fprintf(file, "0\n");
+				}
+			}
+			else {
+				fprintf(file, "0\n");
+			}
 		}
 	}
 };
@@ -104,5 +163,12 @@ int universal_index(Var u, Prefix P) {
 struct QCNF {
 	Prefix prefix;
 	Cnf matrix;
+	
+	void print(FILE* file) {
+		matrix.print_preamble(file);
+		fprintf(file, "\n");
+		prefix.print(file);
+		matrix.print(file);
+	}
 };
 

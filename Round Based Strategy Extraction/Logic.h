@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Linked List.h"
 #include <cmath>
+#include <fstream>
 using namespace std;
 #define Var int 
 
@@ -84,21 +85,45 @@ struct Clause : LinkL<Lit> {
 		cout << 0;
 	}
 
+	void stream_dimacs(std::fstream newfile) {
+		if (newfile.is_open()) {
+			Link1<Lit>* current = head;
+			while (current != NULL) {
+				current->data.display();
+				newfile << " ";
+				current = current->next;
+			}
+			newfile << 0;
+		}
+	}
+
+	void print(FILE* file) {
+		Link1<Lit>* current = head;
+		while (current != NULL) {
+			fprintf(file, "%i", current->data.DIMACS());
+			fprintf(file, " ");
+			current = current->next;
+		}
+		fprintf(file, "0");
+	}
+
 	void sortlist() {
 		bool is_swapped = 1;
 		while (is_swapped) {
 			is_swapped = 0;
-			Link1<Lit>* current = head;
-			Link1<Lit>* index = current->next;
-			while (index != NULL) {
-				if (current->data > index->data) {
-					is_swapped = 1;
-					Lit spare_data = current->data;
-					current->data = index->data;
-					index->data = spare_data;
+			if (head != NULL) {
+				Link1<Lit>* current = head;
+				Link1<Lit>* index = current->next;
+				while (index != NULL) {
+					if (current->data > index->data) {
+						is_swapped = 1;
+						Lit spare_data = current->data;
+						current->data = index->data;
+						index->data = spare_data;
+					}
+					current = current->next;
+					index = index->next;
 				}
-				current = current->next;
-				index = index->next;
 			}
 
 		}
@@ -108,20 +133,22 @@ struct Clause : LinkL<Lit> {
 		bool is_contracted = 1;
 		while (is_contracted) {
 			is_contracted = 0;
-			Link1<Lit>* current = head;
-			Link1<Lit>* index = current->next;
-			while (index != NULL) {
-				if (current->data == index->data) {
-					rmvnode(index);
-					index = current->next;
-					is_contracted = 1;
-				}
-				else
-				{
-					current = current->next;
-					index = index->next;
-				}
+			if (head != NULL) {
+				Link1<Lit>* current = head;
+				Link1<Lit>* index = current->next;
+				while (index != NULL) {
+					if (current->data == index->data) {
+						rmvnode(index);
+						index = current->next;
+						is_contracted = 1;
+					}
+					else
+					{
+						current = current->next;
+						index = index->next;
+					}
 
+				}
 			}
 		}
 
@@ -139,9 +166,38 @@ struct Clause : LinkL<Lit> {
 		}
 		return max;
 	}
+
+	void clear() {
+		while (tail != NULL) {
+			rmvnode(tail);
+		}
+	}
+};
+
+struct Comment {
+	int line_no;
+	const char* comment;
+	Comment() {
+		int line_no = 0;
+		comment = NULL;
+	}
+
+	Comment(int line_no, const char* comment)
+		: line_no(line_no), comment(comment)
+	{
+	}
+	void display() {
+		cout << "c " << comment << endl;
+	}
+	void print(FILE* file) {
+		fprintf(file, "c "); 
+		fprintf(file, comment); 
+		fprintf(file, "\n");
+	}
 };
 
 struct Cnf : LinkL<Clause> {
+	LinkL<Comment> commentary;
 	Var max_var() {
 		int max = 0;
 		Link1<Clause>* current = head;
@@ -155,6 +211,82 @@ struct Cnf : LinkL<Clause> {
 		}
 
 		return max;
+	}
+	Cnf() {
+		head = NULL;
+		tail = NULL;
+		length = 0;
+		commentary= LinkL<Comment>();
+	}
+
+	void clear() {
+		while (tail != NULL) {
+			tail->data.clear();
+			rmvnode(tail);
+		}
+	}
+
+	void display() {
+		Link1<Clause>* current = head;
+		Link1<Comment>* current_comment_head = commentary.head;
+		while (current != NULL) {
+			int current_pos = current->position;
+			Link1<Comment>* current_comment = current_comment_head;
+			while (current_comment != NULL) {
+				int comment_pos = current_comment->data.line_no;
+				if (comment_pos > current_pos) {
+					break;
+				}
+				else {
+					current_comment_head = current_comment;
+					if (comment_pos == current_pos) {
+						current_comment->data.display();
+					}
+				}
+				current_comment = current_comment->next;
+			}
+			current->data.display();
+			cout << endl;
+			current = current->next;
+		}
+	}
+
+	void print_preamble(FILE* file) {
+		fprintf(file, "p cnf ");
+		fprintf(file, "%i", max_var());
+		fprintf(file, " ");
+		fprintf(file, "%i", length);
+	}
+
+
+	void print(FILE* file) {
+		Link1<Clause>* current = head;
+		Link1<Comment>* current_comment_head = commentary.head;
+		while (current != NULL) {
+			int current_pos = current->position;
+			Link1<Comment>* current_comment = current_comment_head;
+			while (current_comment != NULL) {
+				int comment_pos = current_comment->data.line_no;
+				if (comment_pos > current_pos) {
+					break;
+				}
+				else {
+					current_comment_head = current_comment;
+					if (comment_pos == current_pos) {
+						current_comment->data.print(file);
+					}
+				}
+				current_comment = current_comment->next;
+			}
+			current->data.print(file);
+			fprintf(file, "\n");
+			current = current->next;
+		}
+	}
+
+	void add_comment(const char* comment) {
+		Comment temp = Comment(length, comment);
+		commentary.addnode(temp);
 	}
 };
 
@@ -243,7 +375,7 @@ template <typename T> struct Line {
 
 	Line<T>() {
 		clause = T();
-		rule == AXIOM;
+		rule = AXIOM;
 		litpos0 = -1;
 		litpos1 = -1;
 		parent0 = -1;
@@ -252,7 +384,7 @@ template <typename T> struct Line {
 	}
 	Line<T>(T x) {
 		clause = x;
-		rule == AXIOM;
+		rule = AXIOM;
 		litpos0 = -1;
 		litpos1 = -1;
 		parent0 = -1;
@@ -267,7 +399,17 @@ template <typename T> struct Proof :  LinkL<Line<T>> {
 	//	addnode(Line<T>(clause));
 };
 
+bool contains(Lit l, Clause C) {
+	Link1<Lit>* current =C.head;
+	while (current != NULL) {
+		if (current->data == l) {
+			return 1;
+		}
+		current = current->next;
+	}
+	return 0;
 
+}
 
 Clause copy(Clause C) {
 	Link1<Lit>* current = C.head;
@@ -330,6 +472,83 @@ Clause reduce(Clause C, Var u) {//purely reduces a variable
 	return D;
 }
 
+struct Blocked_Set {
+	Var universal;
+	LinkL<Var>* existentials;
+
+	Blocked_Set() {
+		universal = 0;
+		existentials = new LinkL<Var>();
+	}
+	void display() {
+		cout << universal << ": ";
+		Link1<Var>* current = existentials->head;
+		while (current != NULL) {
+			cout << current->data << " ";
+			current = current->next;
+		}
+	}
+};
+
+struct D_Scheme {
+	LinkL<Blocked_Set>* blocked_sets;
+
+	D_Scheme() {
+		blocked_sets = new LinkL<Blocked_Set>;
+	}
+
+	bool is_universal(Var u) {
+		Link1<Blocked_Set>* current = blocked_sets->head;
+		while (current != NULL) {
+			if (current->data.universal == u) {
+				return 1;
+			}
+			current = current -> next;
+		}
+		return 0;
+	}
+
+	bool is_pair(Var universal, Var existential) {
+		bool output = 0;
+		Link1<Blocked_Set>* current1 = blocked_sets->head;
+		while (current1 != NULL) {
+			if (current1->data.universal == universal) {
+				Link1<Var>* current2 = current1->data.existentials->head;
+				while (current2 != NULL) {
+					if (current2->data == existential) {
+						return 1;
+					}
+					current2 = current2->next;
+				}
+			}
+			current1 = current1->next;
+		}
+		return 0;
+	}
+
+	void display() {
+		Link1<Blocked_Set>* current = blocked_sets->head;
+		while (current != NULL) {
+			current->data.display();
+			cout << endl;
+			current = current->next;
+		}
+	}
+
+};
+
+bool u_blocked_in_clause(Var u, Clause C, D_Scheme D) {
+	Link1<Lit>* current = C.head;
+	while (current != NULL) {
+		Var v = current->data.var;
+		if (D.is_pair(u, v)) {
+			return 1;
+		}
+		current = current->next;
+	}
+	return 0;
+}
+
 struct ClausalProof : Proof<Clause> {
 	void display() {
 		Link1<Line<Clause>>* current = head;
@@ -345,6 +564,230 @@ struct ClausalProof : Proof<Clause> {
 	}
 	void addline(Clause C) {
 		addnode(Line<Clause>(C));
+	}
+
+	void addclause_scheme(Clause C, D_Scheme D) {// unfinished and untested
+		Link1<Line<Clause>>* current_line1 = head;
+		while (current_line1 != NULL) {
+			
+			int pivot_position0 = -1;
+			Link1<Lit>* current_lit1 = current_line1->data.clause.head;
+			int current_lit1_pos = 0;
+			bool is_current_lit1_in_C = 0;
+			LinkL<Var> stray_universals1 = LinkL<Var>();//memory leak?
+			while ((current_lit1 != NULL) && (pivot_position0 != -2)) {
+				Link1<Lit>* current_litC = C.head;
+				bool is_current_lit1_in_C = 0;
+				while ((current_litC != NULL) && is_current_lit1_in_C == 0) {
+					if (current_litC->data == current_lit1->data) {
+						is_current_lit1_in_C = 1;
+
+					}
+					current_litC = current_litC->next;
+				}
+				if (!is_current_lit1_in_C) {
+					if (D.is_universal(current_lit1->data.var)) {
+						//add to some list to deal with later
+						stray_universals1.addnode(current_lit1->data.var);
+					}
+					else {//existential must mean pivot
+						if (pivot_position0 == -1) {
+							pivot_position0 = current_lit1_pos;
+						}
+						else {
+							pivot_position0 = -2;
+						}
+					}
+				}
+				current_lit1_pos++;
+				current_lit1 = current_lit1->next;
+			}
+			if (pivot_position0 > -2) {
+				//check all universals for reduction
+				Link1<Var>* current_u = stray_universals1.head;
+				bool is_no_blocked = 1;
+				while ((current_u != NULL)&& is_no_blocked) {
+					if (u_blocked_in_clause(current_u->data, C, D))
+					{
+						is_no_blocked = 0;
+					}
+					current_u = current_u->next;
+				}
+				if (is_no_blocked) {
+					if (pivot_position0 == -1) {
+						addline(C);
+						tail->data.rule = REDUCTION;
+						tail->data.parent0 = current_line1->position;
+						while (stray_universals1.tail != NULL) {
+							stray_universals1.rmvnode(stray_universals1.tail);
+						}
+						return;
+					}
+					else {
+						Lit left_pivot = current_line1->data.clause[pivot_position0];
+						Link1<Line<Clause>>* current_line2 = current_line1;
+						while (current_line2 != NULL) {
+							int pivot_position1 = -1;
+							Link1<Lit>* current_lit2 = current_line2->data.clause.head;
+							int current_lit2_pos = 0;
+							bool is_current_line_2_partner = 1;
+							LinkL<Var> stray_universals2 = LinkL<Var>();
+							while ((current_lit2 != NULL) && (is_current_line_2_partner)) {
+								if (current_lit2->data == -left_pivot) { //check for literal being pivot
+									pivot_position1 = current_lit2_pos;
+								}
+								else {
+									Link1<Lit>* current_litC = C.head;
+									bool is_current_lit2_in_C = 0;
+									while ((current_litC != NULL) && (is_current_lit2_in_C == 0)) { //checks for literal in C
+										if (current_litC->data == current_lit2->data) {
+											is_current_lit2_in_C = 1;
+										}
+										current_litC = current_litC->next;
+									}
+									if (!is_current_lit2_in_C) {
+										if (D.is_universal(current_lit2->data.var)) {
+											//add to some list to deal with later
+											stray_universals2.addnode(current_lit2->data.var);
+										}
+										else {
+											is_current_line_2_partner = 0;
+										}
+									}
+								}
+
+								current_lit2 = current_lit2->next;
+								current_lit2_pos++;
+							}
+
+							if (is_current_line_2_partner) {
+								Link1<Var>* current_u = stray_universals2.head;
+								bool is_no_blocked2 = 1;
+								while ((current_u != NULL) && is_no_blocked2) {
+									if (u_blocked_in_clause(current_u->data, C, D))
+									{
+										is_no_blocked2 = 0;
+									}
+									current_u = current_u->next;
+								}
+								if (is_no_blocked2) {
+
+
+									if (current_lit2_pos == -1) {
+										addline(C);
+										tail->data.rule = REDUCTION;
+										tail->data.parent0 = current_line2->position;
+										while (stray_universals1.tail != NULL) {
+											stray_universals1.rmvnode(stray_universals1.tail);
+										}
+										while (stray_universals2.tail != NULL) {
+											stray_universals2.rmvnode(stray_universals2.tail);
+										}
+										return;
+									}
+									else {
+										add_res(current_line1->position, current_line2->position, -left_pivot);
+										if ((stray_universals1.length != 0) || (stray_universals1.length != 0)) {
+											addline(C);
+											tail->data.rule = REDUCTION;
+											tail->data.parent0 = current_line2->position;
+											while (stray_universals1.tail != NULL) {
+												stray_universals1.rmvnode(stray_universals1.tail);
+											}
+											while (stray_universals2.tail != NULL) {
+												stray_universals2.rmvnode(stray_universals2.tail);
+											}
+										}
+										return;
+									}
+								}
+							}
+							while (stray_universals2.tail != NULL) {
+								stray_universals2.rmvnode(stray_universals2.tail);
+							}
+							current_line2 = current_line2->next;
+						}
+						
+					}
+					
+				}
+			}
+			while (stray_universals1.tail != NULL) {
+				stray_universals1.rmvnode(stray_universals1.tail);
+			}
+			current_line1 = current_line1->next;
+		}
+		addline(C);
+	}
+
+	void addline_prop(Clause C) {
+		Link1<Line<Clause>>* current_line1 = head;
+		while (current_line1 != NULL) {
+			int pivot_position0 = -1;
+			Link1<Lit>* current_lit1 = current_line1->data.clause.head;
+			int current_lit1_pos = 0;
+			while ((current_lit1 != NULL) && (pivot_position0 != -2)) {
+				Link1<Lit>* current_litC = C.head;
+				bool is_current_lit1_in_C = 0;
+				while ((current_litC!=NULL) && is_current_lit1_in_C == 0) {
+					if (current_litC->data== current_lit1->data) {
+						is_current_lit1_in_C = 1;
+
+					}
+					current_litC = current_litC->next;
+				}
+				if(!is_current_lit1_in_C){
+					if (pivot_position0 == -1) {
+						pivot_position0 = current_lit1_pos;
+					}
+					else {
+						pivot_position0 = -2;
+					}
+				}
+				current_lit1 = current_lit1->next;
+				current_lit1_pos++;
+			}
+	
+			if (pivot_position0 > -1) { //Now search for resolution partner
+				Link1<Line<Clause>>* current_line2= current_line1;
+				Lit left_pivot= current_line1->data.clause[pivot_position0];
+				while (current_line2 != NULL) {
+					int pivot_position1= -1;
+					Link1<Lit>* current_lit2 = current_line2->data.clause.head;
+					int current_lit2_pos = 0;
+					bool is_current_line_2_partner = 1;
+					while ((current_lit2!=NULL)&& (is_current_line_2_partner)) {
+						if(current_lit2->data==-left_pivot){ //check for literal being pivot
+							pivot_position1 = current_lit2_pos;
+						}
+						else {
+							Link1<Lit>* current_litC = C.head;
+							bool is_current_lit2_in_C = 0;
+							while ((current_litC != NULL) && (is_current_lit2_in_C == 0)) { //checks for literal in C
+								if (current_litC->data == current_lit2->data) {
+									is_current_lit2_in_C = 1;
+								}
+								current_litC = current_litC->next;
+							}
+							if (!is_current_lit2_in_C) {
+								is_current_line_2_partner = 0;
+							}
+						}
+
+						current_lit2 = current_lit2->next;
+						current_lit2_pos++;
+					}
+					if (is_current_line_2_partner) {
+						add_res(current_line1->position, current_line2->position, -left_pivot);
+						return;
+					}
+
+					current_line2 = current_line2->next;
+				}
+			}
+			current_line1 = current_line1->next;
+		}
+		addline(C);
 	}
 
 	void add_ax(Clause C) {
@@ -425,11 +868,32 @@ Cnf copy(Cnf input) {
 	Cnf output;
 	Link1<Clause>* current = input.head;
 	while (current != NULL) {
-		output.addnode(current->data);
+		Clause C = copy(current->data);
+		output.addnode(C);
 		current = current->next;
 	}
 	return output;
 }
+
+void copyinto(Cnf* output, Cnf* input) {
+	Link1<Clause>* current = input->head;
+	while (current != NULL) {
+		output->addnode(current->data);
+		current = current->next;
+	}
+}
+
+Cnf copy(Cnf *input) {
+	Cnf output;
+	Link1<Clause>* current = input->head;
+	while (current != NULL) {
+		Clause C = copy(current->data);
+		output.addnode(C);
+		current = current->next;
+	}
+	return output;
+}
+
 
  int find_a_position(Lit target, Clause the_list) {
 	Link1<Lit>* current = the_list.head;

@@ -5,11 +5,12 @@
 
 #include "Test.h"
 
+
 using namespace std;
 
 int main()
 {
 	cout << "Hello CMake." << endl;
-	testproof(3);
+	testproof(5);
 	return 0;
 }

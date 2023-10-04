@@ -1,4 +1,6 @@
 #include "Round Based Strategy Extraction.h"
+
+#include "Examples.h"
 using namespace std;
 
 #define endline cout<<endl;
@@ -10,38 +12,118 @@ void testproof(int level) {
 	Clause A2; A2.addnode(x); A2.addnode(u); A2.addnode(-t);
 	Clause A3; A3.addnode(t);
 	Cnf F; F.addnode(A1); F.addnode(A2); F.addnode(A3);
+	Cnf G = copy(F);
 	Prefix P; P.addvar(1); P.addvar(-2); P.addvar(3);
 	QCNF Phi; Phi.matrix = F; Phi.prefix = P;
-
 	ClausalProof pi; pi.add_ax(A1); pi.add_ax(A2); pi.add_ax(A3);
-	pi.add_res(0,1,x);
-	pi.add_red(2, 2);
-	pi.add_res(4, 2, t);
+	pi.add_res(0, 1, x);//3
+	pi.add_red(3, 2);//4
+	pi.add_res(4, 2, t);//5
+	//Cnf tstread1 = read_dimacs("input.txt");
+	Cnf tstread2 = read_dimacs("testdimacs.txt");
+	//QCNF tstread3 = read_qdimacs("testdimacs.txt");
+	//testread("qdimacs.txt");
+	//tstread3.matrix.display();
+	const char* testfilename = "qdimacstest.qcnf";
+
+	if (remove(testfilename) != 0)
+	{
+		printf("No file to replace creating new %s file\n", testfilename);
+	}
+	
+	FILE* qdm = fopen(testfilename, "w");
+	F.print_preamble(qdm);
+	P.print(qdm);
+	fprintf(qdm, "\n");
+	F.print(qdm);
+
+	const char* testfilename2 = "qparitytest.qcnf";
+	if (remove(testfilename2) != 0)
+	{
+		printf("No file to replace creating new %s file\n", testfilename);
+	}
+	fclose(qdm);
+	QCNF testqbf = QParity(5);
+	FILE* qpar = fopen(testfilename2, "w");
+	testqbf.print(qpar);
+	//fclose(qpar);
+	//FILE* testfile = fopen(testfilename2, "w+");
+	QCNF tstread4 = read_qdimacs(qpar);
+	fclose(qpar);
+	tstread4.matrix.display();
+	
+	
+	ClausalProof testproof = lqrcQParity(5);
+	D_Scheme testdscheme = calculate_Drrs(Phi);
+	propagation(F);
+
+	idx::Strategy_Extractor* SE = idx::Extract(&testqbf, &testproof);
+	idx::all_equivalence_by_distance(SE);
+	if (remove("QRATtest.qrat") != 0) {
+		printf("No file to replace creating new %s file\n", "QRATtest.qrat");
+	}
+	else {
+		puts("File succesfully deleted");
+	}
+
+	if (remove("QRATtest.cnf") != 0) {
+		printf("No file to replace creating new %s file\n", "QRATtest.cnf");
+	}
+	else {
+		puts("File succesfully deleted");
+	}
+
+	FILE* test_output = fopen("QRATtest.qrat", "w");
+	SE->output_QRAT->print(test_output);
+	fclose(test_output);
+	FILE* test_outputcnf = fopen("QRATtest.cnf", "w");
+	SE->output_cnf->print(test_outputcnf);
+	fclose(test_outputcnf);
 	
 
 	idx::Index testIndex =idx::Index(Phi, &pi);
-	if (level < 2) {
-		testIndex.idx_prefix->display(); endline;
+	
+	
+
+	if (0) {
+		//SE->main_index->display(testqbf.prefix);
 	}
-	if (level < 3) {
-		P.display(); endline;
-		pi.display();
-		
-		testIndex.display(MEMBERSHIP, 1);
-		testIndex.display(TAUTOLOGICAL, 1);
-		testIndex.display(SELON, 1);
-		testIndex.display(SELVAL, 1);
-		testIndex.display(DESCENDANT, 1);
-		testIndex.display(ANCESTOR, 1);
-		testIndex.display(XANCESTORSELON, 1);
-		testIndex.display(XANCESTORSELVAL0, 1);
-		testIndex.display(XANCESTORSELVAL1, 1);
-		testIndex.display(XANCESTORMEMBERSHIP, 2);
-		testIndex.display(STRATEGY, 2);
-		
-	}
-	if (level < 4) {
-		testIndex.display(P);
+	else {
+		if (level < 2) {
+			testIndex.idx_prefix->display(); endline;
+			//tstread1.display();
+			tstread2.display();
+		}
+		if (level < 4) {
+			P.display(); endline;
+			pi.display();
+
+			testIndex.display(MEMBERSHIP, 1);
+			testIndex.display(TAUTOLOGICAL, 1);
+			testIndex.display(SELON, 1);
+			testIndex.display(SELVAL, 1);
+			testIndex.display(DESCENDANT, 1);
+			testIndex.display(ANCESTOR, 1);
+			testIndex.display(XANCESTORSELON, 1);
+			testIndex.display(XANCESTORSELVAL0, 1);
+			testIndex.display(XANCESTORSELVAL1, 1);
+			testIndex.display(XANCESTORMEMBERSHIP, 2);
+			testIndex.display(STRATEGY, 2);
+
+		}
+		if (level < 6) {
+			testIndex.display(P);
+			cout << endl;
+			testdscheme.display();
+			//SE->output_QRAT->full_check();
+
+		}
+		if (level < 5) {
+			cout << endl;
+			SE->output_cnf->display();
+			
+			//SE->output_QRAT->display();
+		}
 	}
 }
 
