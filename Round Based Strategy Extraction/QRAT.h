@@ -372,4 +372,6 @@ struct QRAT_Proof {
 			current = current-> next;
 		}
 	}
+
+	
 };

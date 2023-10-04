@@ -36,24 +36,35 @@ void testproof(int level) {
 	P.print(qdm);
 	fprintf(qdm, "\n");
 	F.print(qdm);
-
+	QCNF testqbf = QParity(5);
 	const char* testfilename2 = "qparitytest.qcnf";
-	if (remove(testfilename2) != 0)
+	/*if (remove(testfilename2) != 0)
 	{
 		printf("No file to replace creating new %s file\n", testfilename);
 	}
 	fclose(qdm);
-	QCNF testqbf = QParity(5);
-	FILE* qpar = fopen(testfilename2, "w");
+	
+	FILE* qpar = fopen(testfilename2, "w+");
 	testqbf.print(qpar);
-	//fclose(qpar);
-	//FILE* testfile = fopen(testfilename2, "w+");
-	QCNF tstread4 = read_qdimacs(qpar);
 	fclose(qpar);
+	*/
+	//FILE* testfile = fopen(testfilename2, "w+");
+	FILE* testfile = fopen(testfilename2, "r");
+	QCNF tstread4 = read_qdimacs(testfile);
+	fclose(testfile);
 	tstread4.matrix.display();
 	
 	
 	ClausalProof testproof = lqrcQParity(5);
+	FILE* qrcprooffile = fopen("prooftest.qrc", "w+");
+	print_qrc(qrcprooffile, testqbf, testproof);
+	fclose(qrcprooffile);
+
+	FILE* qrcprooffile2 = fopen("prooftest.qrc", "r");
+	ClausalProof testproofagain= read_qrc(qrcprooffile2);
+	testproofagain.display();
+	fclose(qrcprooffile2);
+
 	D_Scheme testdscheme = calculate_Drrs(Phi);
 	propagation(F);
 

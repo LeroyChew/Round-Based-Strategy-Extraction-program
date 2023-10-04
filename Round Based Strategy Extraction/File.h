@@ -180,7 +180,76 @@ Cnf read_dimacs(const char* cnfname) {//broken
 	}
 	return output;
 }
+ClausalProof read_qrc(FILE* file){
+	char p_label[10], cnf_label[10];
+	int max_var, max_clauses;
+	ClausalProof output = ClausalProof();
+	rewind(file);
+	fscanf(file, "%s %s %d %d", p_label, cnf_label, &max_var, &max_clauses);
+	char* ch;
+	char str[10];
+	int block_counter = 0;
+	int v = -1;
+	while (fscanf(file, "%s", str) != EOF) {
 
+		//*ch = str[0];
+		if (str[0] == 101) {//e
+			fscanf(file, "%d", &v);
+			while (v != 0) {
+				//output.prefix.addnode(Quantifier(v));
+				fscanf(file, "%d", &v);
+
+			}
+			block_counter++;
+		}
+		if (str[0] == 97) {//a
+			fscanf(file, "%d", &v);
+			while (v != 0) {
+				//output.prefix.addnode(Quantifier(-v));
+				fscanf(file, "%d", &v);
+
+			}
+			block_counter++;
+		}
+	}
+	rewind(file);
+	int i = 0;
+	while (i < block_counter) {
+		fscanf(file, "%s", str);
+		if (str[0] == '0') {
+			i++;
+		}
+	}
+	fscanf(file, "%s", str);
+	Line<Clause> temp= Line<Clause>();
+	while (fscanf(file, "%s", str) != EOF) {
+		v = atoi(str);
+		if (v == 0) {
+			output.addnode(temp);
+			temp = Line<Clause>();
+			fscanf(file, "%s", str);
+			v = atoi(str);
+			int parent_no = 0;
+			while (v != 0 && parent_no<2) {
+				if (parent_no == 0) {
+					temp.parent0 = v - 1;
+				}
+				if (parent_no == 1) {
+					temp.parent0 = v - 1;
+				}
+				parent_no++;
+				fscanf(file, "%s", str);
+				v = atoi(str);
+			}
+			fscanf(file, "%s", str);
+		}
+		else {
+			temp.clause.addnode(Lit(v));
+		}
+
+	}
+	return output;
+}
 
 QCNF read_qdimacs(FILE* file) {
 	char p_label[10], cnf_label[10];

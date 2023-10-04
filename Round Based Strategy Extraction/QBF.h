@@ -172,3 +172,29 @@ struct QCNF {
 	}
 };
 
+void print_qrc(FILE* file, QCNF formula, ClausalProof proof) {
+	fprintf(file, "p qrp ");
+	fprintf(file, "%i", formula.matrix.max_var());
+	fprintf(file, " ");
+	fprintf(file, "%i", formula.matrix.length);
+	fprintf(file, "\n");
+	formula.prefix.print(file);
+	Link1<Line<Clause>>* current = proof.head;
+	while (current != NULL) {
+		fprintf(file, "%i", current->position + 1);
+		fprintf(file, " ");
+		current->data.clause.print(file);
+		fprintf(file, " ");
+		if (current->data.parent0 > -1) {
+			fprintf(file, "%i", current->data.parent0 + 1);
+			fprintf(file, " ");
+		}
+		if (current->data.parent1 > -1) {
+			fprintf(file, "%i", current->data.parent1 + 1);
+			fprintf(file, " ");
+		}
+		fprintf(file, "0");
+		fprintf(file, "\n");
+		current = current->next;
+	}
+}

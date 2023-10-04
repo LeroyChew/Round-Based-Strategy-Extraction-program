@@ -284,6 +284,8 @@ struct Cnf : LinkL<Clause> {
 		}
 	}
 
+
+
 	void add_comment(const char* comment) {
 		Comment temp = Comment(length, comment);
 		commentary.addnode(temp);
@@ -852,6 +854,28 @@ struct ClausalProof : Proof<Clause> {
 		addnode(*temp);
  	}
 
+	void print(FILE* file) {
+		fprintf(file, "p qrp ");
+		fprintf(file, "\n");
+		Link1<Line<Clause>>* current = head;
+		while (current != NULL) {
+			fprintf(file, "%i", current->position+ 1);
+			fprintf(file, " ");
+			current->data.clause.print(file);
+			fprintf(file, " ");
+			if (current->data.parent0> -1) {
+				fprintf(file , "%i", current->data.parent0 + 1);
+				fprintf(file, " ");
+			}
+			if (current->data.parent1 > -1) {
+				fprintf(file, "%i", current->data.parent1 + 1);
+				fprintf(file, " ");
+			}
+			fprintf(file, "0");
+			fprintf(file, "\n");
+			current = current->next;
+		}
+	}
 	
 
 	//void display() {
