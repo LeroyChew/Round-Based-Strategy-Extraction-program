@@ -174,6 +174,7 @@ struct Clause : LinkL<Lit> {
 	}
 };
 
+
 struct Comment {
 	int line_no;
 	const char* comment;
@@ -875,6 +876,7 @@ struct ClausalProof : Proof<Clause> {
 			fprintf(file, "\n");
 			current = current->next;
 		}
+		
 	}
 	
 

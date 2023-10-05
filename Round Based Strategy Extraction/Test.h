@@ -52,13 +52,13 @@ void testproof(int level) {
 	FILE* testfile = fopen(testfilename2, "r");
 	QCNF tstread4 = read_qdimacs(testfile);
 	fclose(testfile);
-	tstread4.matrix.display();
+	//tstread4.matrix.display();
 	
 	
 	ClausalProof testproof = lqrcQParity(5);
-	FILE* qrcprooffile = fopen("prooftest.qrc", "w+");
-	print_qrc(qrcprooffile, testqbf, testproof);
-	fclose(qrcprooffile);
+	//FILE* qrcprooffile = fopen("prooftest.qrc", "w+");
+	//print_qrc(qrcprooffile, testqbf, testproof);
+	//fclose(qrcprooffile);
 
 	FILE* qrcprooffile2 = fopen("prooftest.qrc", "r");
 	ClausalProof testproofagain= read_qrc(qrcprooffile2);

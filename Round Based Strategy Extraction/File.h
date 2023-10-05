@@ -180,7 +180,7 @@ Cnf read_dimacs(const char* cnfname) {//broken
 	}
 	return output;
 }
-ClausalProof read_qrc(FILE* file){
+ClausalProof read_qrc(FILE* file){//cannot deal with comments
 	char p_label[10], cnf_label[10];
 	int max_var, max_clauses;
 	ClausalProof output = ClausalProof();
@@ -221,31 +221,63 @@ ClausalProof read_qrc(FILE* file){
 		}
 	}
 	fscanf(file, "%s", str);
+	if (str[0] == '#') {
+		//fscanf(file, "%*%[^\n]\n");
+		char buffer[100];
+		fgets(buffer, 100, file);
+		fscanf(file, "%s", str);
+	}
 	Line<Clause> temp= Line<Clause>();
 	while (fscanf(file, "%s", str) != EOF) {
+		if (str[0] == 'r') {
+			return output;
+		}
+		
 		v = atoi(str);
-		if (v == 0) {
-			output.addnode(temp);
-			temp = Line<Clause>();
-			fscanf(file, "%s", str);
-			v = atoi(str);
-			int parent_no = 0;
-			while (v != 0 && parent_no<2) {
-				if (parent_no == 0) {
-					temp.parent0 = v - 1;
-				}
-				if (parent_no == 1) {
-					temp.parent0 = v - 1;
-				}
-				parent_no++;
+			if ((v == 0) && (str[0] == '0')) {
+
 				fscanf(file, "%s", str);
 				v = atoi(str);
+				int parent_no = 0;
+				while (v != 0 && parent_no < 2) {
+					if (parent_no == 0) {
+						temp.parent0 = v - 1;
+						temp.rule = REDUCTION;
+					}
+					if (parent_no == 1) {
+						temp.parent1 = v - 1;
+						temp.rule = RESOLUTION;
+						Link1<Lit>* current0 = output[temp.parent0].clause.head;
+						while (current0 != NULL) {
+							if (!contains(current0->data, temp.clause)) {
+								temp.litpos0 = current0->position;
+							}
+							current0 = current0->next;
+						}
+						Link1<Lit>* current1 = output[temp.parent1].clause.head;
+						while (current1 != NULL) {
+							if (!contains(current1->data, temp.clause)) {
+								temp.litpos1 = current1->position;
+							}
+							current1 = current1->next;
+						}
+					}
+					parent_no++;
+					fscanf(file, "%s", str);
+					v = atoi(str);
+				}
+				fscanf(file, "%s", str);
+				if (str[0] == '#') {
+					char buffer[100];
+					fgets(buffer, 100, file);
+					fscanf(file, "%s", str);
+				}
+				output.addnode(temp);
+				temp = Line<Clause>();
 			}
-			fscanf(file, "%s", str);
-		}
-		else {
-			temp.clause.addnode(Lit(v));
-		}
+			else {
+				temp.clause.addnode(Lit(v));
+			}
 
 	}
 	return output;

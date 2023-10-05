@@ -197,4 +197,7 @@ void print_qrc(FILE* file, QCNF formula, ClausalProof proof) {
 		fprintf(file, "\n");
 		current = current->next;
 	}
+	if (proof.tail->data.clause.length == 0) {
+		fprintf(file, "r unsat");
+	}
 }
