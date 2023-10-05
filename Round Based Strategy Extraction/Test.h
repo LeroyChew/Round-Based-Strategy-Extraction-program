@@ -4,6 +4,52 @@
 using namespace std;
 
 #define endline cout<<endl;
+
+
+void testmultilinear(int level) {
+	//generate output
+	const char* output_qdimacs = "formulatest.qdimacs";
+	const char* output_qrc = "prooftest.qrc";
+	
+	/*
+	if (remove(output_qdimacs) != 0)
+	{
+		printf("No file to replace creating new %s file\n", output_qdimacs);
+	}
+	if (remove(output_qrc) != 0)
+	{
+		printf("No file to replace creating new %s file\n", output_qrc);
+	}
+	
+
+	QCNF testqbf = QParity(5);
+	ClausalProof testproof = lqrcQParity(5);
+	
+
+	FILE* qdimacsfile = fopen(output_qdimacs, "w+");
+	testqbf.print(qdimacsfile);
+	fclose(qdimacsfile);
+
+	FILE* qrcfile = fopen(output_qrc, "w+");
+	print_qrc(qrcfile, testqbf, testproof);
+	fclose(qrcfile);
+	*/
+
+	//calculate input
+	const char* input_qdimacs = output_qdimacs;
+	const char* input_qrc = output_qrc;
+	const char* output_cnf = "output.cnf";
+	if (remove(output_cnf) != 0)
+	{
+		printf("No file to replace creating new %s file\n", output_cnf);
+	}
+
+	FILE* cnffile = fopen(output_cnf, "w+");
+	Cnf* output = multilinear::StrategyCnf(input_qdimacs, input_qrc);
+	output->print_dimacs(cnffile);
+	fclose(cnffile);
+}
+
 void testproof(int level) {
 	Lit x = Lit(1);
 	Lit u = Lit(2);

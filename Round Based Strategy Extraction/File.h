@@ -191,33 +191,43 @@ ClausalProof read_qrc(FILE* file){//cannot deal with comments
 	int block_counter = 0;
 	int v = -1;
 	while (fscanf(file, "%s", str) != EOF) {
-
-		//*ch = str[0];
-		if (str[0] == 101) {//e
-			fscanf(file, "%d", &v);
-			while (v != 0) {
-				//output.prefix.addnode(Quantifier(v));
-				fscanf(file, "%d", &v);
-
-			}
-			block_counter++;
+		if (str[0] == '#') {
+			char buffer[100];
+			fgets(buffer, 100, file);
 		}
-		if (str[0] == 97) {//a
-			fscanf(file, "%d", &v);
-			while (v != 0) {
-				//output.prefix.addnode(Quantifier(-v));
+		else {
+			if (str[0] == 101) {//e
 				fscanf(file, "%d", &v);
+				while (v != 0) {
+					//output.prefix.addnode(Quantifier(v));
+					fscanf(file, "%d", &v);
 
+				}
+				block_counter++;
 			}
-			block_counter++;
+			if (str[0] == 97) {//a
+				fscanf(file, "%d", &v);
+				while (v != 0) {
+					//output.prefix.addnode(Quantifier(-v));
+					fscanf(file, "%d", &v);
+
+				}
+				block_counter++;
+			}
 		}
 	}
 	rewind(file);
 	int i = 0;
 	while (i < block_counter) {
 		fscanf(file, "%s", str);
-		if (str[0] == '0') {
-			i++;
+		if (str[0] == '#') {
+			char buffer[100];
+			fgets(buffer, 100, file);
+		}
+		else {
+			if (str[0] == '0') {
+				i++;
+			}
 		}
 	}
 	fscanf(file, "%s", str);
@@ -295,46 +305,63 @@ QCNF read_qdimacs(FILE* file) {
 	int block_counter = 0;
 	int v = -1;
 	while (fscanf(file, "%s", str) != EOF) {
-		
-		//*ch = str[0];
-		if (str[0] == 101) {//e
-			fscanf(file, "%d", &v);
-			while (v!=0) {
-				output.prefix.addnode(Quantifier(v));
-				fscanf(file, "%d", &v);
-				
-			}
-			block_counter++;
+		if (str[0] == 'c') {
+			char buffer[100];
+			fgets(buffer, 100, file);
 		}
-		if (str[0] == 97) {//a
-			fscanf(file, "%d", &v);
-			while (v != 0) {
-				output.prefix.addnode(Quantifier(-v));
+		else {
+			//*ch = str[0];
+			if (str[0] == 101) {//e
 				fscanf(file, "%d", &v);
-				
+				while (v != 0) {
+					output.prefix.addvar(v);
+					fscanf(file, "%d", &v);
+
+				}
+				block_counter++;
 			}
-			block_counter++;
+			if (str[0] == 97) {//a
+				fscanf(file, "%d", &v);
+				while (v != 0) {
+					output.prefix.addvar(- v);
+					fscanf(file, "%d", &v);
+
+				}
+				block_counter++;
+			}
 		}
 	}
 	rewind(file);
 	int i = 0;
 	while (i< block_counter) {
 		fscanf(file, "%s", str);
-		if (str[0] == '0') {
-			i++;
+		if (str[0] == 'c') {
+			char buffer[100];
+			fgets(buffer, 100, file);
+		}
+		else {
+			
+			if (str[0] == '0') {
+				i++;
+			}
 		}
 	}
 	Clause temp = Clause();
 	while (fscanf(file, "%s", str) != EOF) {
-		v = atoi(str);
-		if (v == 0) {
-			output.matrix.addnode(temp);
-			temp = Clause();
+		if (str[0] == 'c') {
+			char buffer[100];
+			fgets(buffer, 100, file);
 		}
 		else {
-			temp.addnode(Lit(v));
+			v = atoi(str);
+			if (v == 0) {
+				output.matrix.addnode(temp);
+				temp = Clause();
+			}
+			else {
+				temp.addnode(Lit(v));
+			}
 		}
-
 	}
 	
 	return output;

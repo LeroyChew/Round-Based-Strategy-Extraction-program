@@ -10,7 +10,7 @@ using namespace std;
 
 int main()
 {
-	cout << "Hello CMake." << endl;
-	testproof(5);
+	//cout << "Hello CMake." << endl;
+	testmultilinear(5);
 	return 0;
 }

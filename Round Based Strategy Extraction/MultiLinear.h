@@ -1,5 +1,6 @@
 #pragma once
 #include "QRAT.h"
+#include "File.h"
 namespace multilinear {
 	struct IndexLit {
 		bool is_membership_defined;
@@ -448,24 +449,24 @@ namespace multilinear {
 				Lit meml = Lit(read.memberships->operator[](lit_counter).membership);
 				if ((pos0 == -1) && (pos1 != -1)) {
 					Lit l1 = Lit(SE->main_index->operator[](level).operator[](parent1).memberships->operator[](pos1).membership);
-					Clause mem_val;
+					Clause mem_val;//sets meml true if selval=1 and l1
 					mem_val.addnode(-selvall);
 					mem_val.addnode(-l1);
 					mem_val.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_val);//RATA on meml, trivial;
 					qrat->QRATA(mem_val, meml);
-					Clause mem_on;
+					Clause mem_on;// sets meml true if seloff and l1
 					mem_on.addnode(selonl);
 					mem_on.addnode(-l1);
 					mem_on.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_on);//RATA on meml, trivial;
 					qrat->QRATA(mem_on, meml);
-					Clause mem_parent;
+					Clause mem_parent;// sets meml false if -l1
 					mem_parent.addnode(l1);
 					mem_parent.addnode(-meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_parent);//RATA on -meml, blocked by -l1 in both clauses
 					qrat->QRATA(mem_parent, -meml);
-					Clause mem_sel;
+					Clause mem_sel;// sets meml false if selon and -selval
 					mem_sel.addnode(-selonl);
 					mem_sel.addnode(selvall);
 					mem_sel.addnode(-meml);
@@ -476,24 +477,24 @@ namespace multilinear {
 				if ((pos0 != -1) && (pos1 == -1)) {
 					Lit l0 = Lit(SE->main_index->operator[](level).operator[](parent0).memberships->operator[](pos0).membership);
 					//add equivalence for parent0
-					Clause mem_val;
+					Clause mem_val;//sets meml true when -selval and l0
 					mem_val.addnode(selvall);
 					mem_val.addnode(-l0);
 					mem_val.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_val);//RATA on meml, trivial;
 					qrat->QRATA(mem_val, meml);
-					Clause mem_on;
+					Clause mem_on;//sets meml true when -selon and l0
 					mem_on.addnode(selonl);
 					mem_on.addnode(-l0);
 					mem_on.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_on);//RATA on meml, trivial;
 					qrat->QRATA(mem_on, meml);
-					Clause mem_parent;
+					Clause mem_parent;//sets meml false when -l0
 					mem_parent.addnode(l0);
 					mem_parent.addnode(-meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_parent);//RATA on -meml, blocked by -l0 in both clauses
 					qrat->QRATA(mem_parent, -meml);
-					Clause mem_sel;
+					Clause mem_sel;//sets meml false when selon and selval
 					mem_sel.addnode(-selonl);
 					mem_sel.addnode(-selvall);
 					mem_sel.addnode(-meml);
@@ -506,50 +507,50 @@ namespace multilinear {
 					Lit l0 = Lit(SE->main_index->operator[](level).operator[](parent0).memberships->operator[](pos0).membership);
 					Lit l1 = Lit(SE->main_index->operator[](level).operator[](parent1).memberships->operator[](pos1).membership);
 					//disjunctive reasoning except for selon
-					Clause mem_val0;
+					Clause mem_val0;//sets meml true when selval=0 and l0
 					mem_val0.addnode(selvall);
 					mem_val0.addnode(-l0);
 					mem_val0.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_val0);//RATA on meml, trivial;
 					qrat->QRATA(mem_val0, meml);
-					Clause mem_val1;
+					Clause mem_val1;//sets meml true when selval=0  and l1
 					mem_val1.addnode(-selvall);
 					mem_val1.addnode(-l0);
 					mem_val1.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_val1);//RATA on meml, trivial;
 					qrat->QRATA(mem_val1, meml);
 
-					Clause mem_off0;
+					Clause mem_off0;//sets meml true when seloff and l0
 					mem_off0.addnode(selonl);
 					mem_off0.addnode(-l0);
 					mem_off0.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_off0);//RATA on meml, trivial;
 					qrat->QRATA(mem_off0, meml);
 
-					Clause mem_off1;
+					Clause mem_off1;//sets meml true when seloff and l1
 					mem_off1.addnode(selonl);
 					mem_off1.addnode(-l1);
 					mem_off1.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_off1);//RATA on meml, trivial;
 					qrat->QRATA(mem_off1, meml);
 
-					Clause mem_parent;
+					Clause mem_parent;//sets meml false when both parents lack it
 					mem_parent.addnode(l0);
 					mem_parent.addnode(l1);
 					mem_parent.addnode(-meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_parent);//RATA on -meml, blocked by -l1 in 1 clause,, blocked by -l0 in 0 clauses
 					qrat->QRATA(mem_parent, -meml);
 
-					Clause mem_on0;
+					Clause mem_on0;//sets meml false when l0 false and sel points to it
 					mem_on0.addnode(-selonl);
-					mem_on0.addnode(-selvall);
+					mem_on0.addnode(selvall);
 					mem_on0.addnode(l0);
 					mem_on0.addnode(-meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_on0);//RATA on -meml, blocked by selon in off, by selval in val1, by -l0 in val0
 					qrat->QRATA(mem_on0, -meml);
-					Clause mem_on1;
+					Clause mem_on1;//sets meml false when 10 false and sel points to it
 					mem_on1.addnode(-selonl);
-					mem_on1.addnode(selvall);
+					mem_on1.addnode(-selvall);
 					mem_on1.addnode(l1);
 					mem_on1.addnode(-meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_on1);//RATA on -meml, blocked by selon in off, by selval in val0, by -l1 in val1
@@ -1056,5 +1057,16 @@ namespace multilinear {
 	}
 
 
+	Cnf* StrategyCnf(const char* formulaname, const char* proofname) {
+		FILE* qdimacs = fopen(formulaname, "r");
+		QCNF formula = read_qdimacs(qdimacs);
+		fclose(qdimacs);
+		
+		FILE* qrc = fopen(proofname, "r");
+		ClausalProof proof = read_qrc(qrc);
+		fclose(qrc);
 
+		Strategy_Extractor* ClausalExtractor = Extract(&formula, &proof);
+		return ClausalExtractor->output_cnf;
+	}
 }

@@ -285,7 +285,11 @@ struct Cnf : LinkL<Clause> {
 		}
 	}
 
-
+	void print_dimacs(FILE* file) {
+		print_preamble(file);
+		fprintf(file, "\n");
+		print(file);
+	}
 
 	void add_comment(const char* comment) {
 		Comment temp = Comment(length, comment);
