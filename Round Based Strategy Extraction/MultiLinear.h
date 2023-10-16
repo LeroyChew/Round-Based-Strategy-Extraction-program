@@ -735,8 +735,8 @@ namespace multilinear {
 	}
 
 	void def_layer(Strategy_Extractor* SE, LinkL<LinkL<IndexLine> >* idx_proof, Prefix P, ClausalProof* pi, int level) {
-		LinkL<IndexLine> read = SE->main_index->operator[](level);
-		Link1<IndexLine>* current = read.head;
+		LinkL<IndexLine>* read = &SE->main_index->findnode(level)->data;
+		Link1<IndexLine>* current = read->head;
 		int botpos = pi->tail->position;
 		int line_no = 0;
 		while (current != NULL) {//cycles through all lines
@@ -744,7 +744,7 @@ namespace multilinear {
 			current = current->next;
 			line_no++;
 		}
-		current = read.tail;
+		current = read->tail;
 		line_no = botpos;
 		while (current != NULL) {//cycles through all lines
 			backdef_cell(SE, current->data, level, line_no);
@@ -758,11 +758,11 @@ namespace multilinear {
 	void MemberCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no, int position);
 
 	void SelonCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no) {
-		IndexLine lineidx = SE->main_index->operator[](level).operator[](line_no);
+		IndexLine* lineidx = &SE->main_index->operator[](level).findnode(line_no)->data;
 		ClausalProof* pi = SE->input_proof;
 		Line L = pi->operator[](line_no);
-		if (lineidx.is_selon_defined == 0) {
-			lineidx.is_selon_defined = 1;
+		if (lineidx->is_selon_defined == 0) {
+			lineidx->is_selon_defined = 1;
 			Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
 			Link1<IndexLine>* layer2 = layer1->data.findnode(line_no);
 			layer2->data.is_selon_defined = 1;
@@ -772,7 +772,7 @@ namespace multilinear {
 				SelonCnfLoad(output, SE, level - 1, line_no);
 
 			}
-			copyinto(output, lineidx.def_selon);
+			copyinto(output, lineidx->def_selon);
 		}
 	}
 	void SelvalCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no) {
@@ -800,9 +800,9 @@ namespace multilinear {
 		Line<Clause> L = pi->operator[](line_no);
 		Clause C = L.clause;
 		Lit l = C.operator[](position);
-		IndexLine lineidx = SE->main_index->operator[](level).operator[](line_no);
-		IndexLit memidx = lineidx.memberships->operator[](position);
-		if (memidx.is_membership_defined == 0) {
+		IndexLine* lineidx = &SE->main_index->operator[](level).findnode(line_no)->data;
+		IndexLit* memidx = &(lineidx->memberships->findnode(position)->data);
+		if (memidx->is_membership_defined == 0) {
 			Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
 			Link1<IndexLine>* layer2 = layer1->data.findnode(line_no);
 			Link1<IndexLit>* layer3 = layer2->data.memberships->findnode(position);
@@ -836,7 +836,7 @@ namespace multilinear {
 					MemberCnfLoad(output, SE, level, L.parent1, pos1);
 				}
 			}
-			copyinto(output, memidx.def_membership);
+			copyinto(output, memidx->def_membership);
 		}
 
 	}
@@ -844,27 +844,27 @@ namespace multilinear {
 	void ConnCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no1);
 
 	void XSelCnfLoad(bool val, Cnf* output, Strategy_Extractor* SE, int level, int line_no1) {
-		IndexLine cell = SE->main_index->operator[](level).operator[](line_no1);
+		IndexLine* cell = &SE->main_index->operator[](level).findnode(line_no1)->data;
 		ClausalProof* pi = SE->input_proof;
 		Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
 		Link1<IndexLine>* layer2 = layer1->data.findnode(line_no1);
 		if (val) {
-			if (cell.is_xselval1_defined == 0) {
+			if (cell->is_xselval1_defined == 0) {
 				layer2->data.is_xselval1_defined = 1;
 				ConnCnfLoad(output, SE, level, line_no1);
 				SelonCnfLoad(output, SE, level, line_no1);
 				SelvalCnfLoad(output, SE, level, line_no1);
-				copyinto(output, cell.def_xselval1);
+				copyinto(output, cell->def_xselval1);
 
 			}
 		}
 		else {
-			if (cell.is_xselval0_defined == 0) {
+			if (cell->is_xselval0_defined == 0) {
 				layer2->data.is_xselval0_defined = 1;
 				ConnCnfLoad(output, SE, level, line_no1);
 				SelonCnfLoad(output, SE, level, line_no1);
 				SelvalCnfLoad(output, SE, level, line_no1);
-				copyinto(output, cell.def_xselval0);
+				copyinto(output, cell->def_xselval0);
 			}
 		}
 	}

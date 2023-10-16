@@ -573,6 +573,19 @@ struct ClausalProof : Proof<Clause> {
 		addnode(Line<Clause>(C));
 	}
 
+	Var max_var() {
+		int max = 0;
+		Link1<Line<Clause>>* current = head;
+		while (current != NULL) {
+			Var index = current->data.clause.max_var();
+			if (index > max) {
+				max = index;
+			}
+			current = current->next;
+		}
+		return max;
+	}
+
 	void addclause_scheme(Clause C, D_Scheme D) {// unfinished and untested
 		Link1<Line<Clause>>* current_line1 = head;
 		while (current_line1 != NULL) {
@@ -861,6 +874,9 @@ struct ClausalProof : Proof<Clause> {
 
 	void print(FILE* file) {
 		fprintf(file, "p qrp ");
+		fprintf(file, "%i", max_var());
+		fprintf(file, " ");
+		fprintf(file, "%i", length);
 		fprintf(file, "\n");
 		Link1<Line<Clause>>* current = head;
 		while (current != NULL) {
