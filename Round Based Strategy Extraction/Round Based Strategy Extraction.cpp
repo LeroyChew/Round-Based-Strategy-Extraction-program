@@ -27,7 +27,7 @@ void pseudomain(int argc, char** argv ) {
 		qdimacsname = argv[1];
 	}
 	else {
-		printf("Not enough arguments, defaulting to example mode: QPARITY(100)");
+		printf("Not enough arguments, defaulting to example mode: QPARITY(200)");
 		file_reading = 0;
 	}
 	
@@ -88,7 +88,7 @@ void pseudomain(int argc, char** argv ) {
 	}
 
 	start = std::clock();
-	multilinear::Strategy_Extractor* ClausalExtractor = multilinear::Extract(&formula, &proof);
+	multilinear::Strategy_Extractor* ClausalExtractor = multilinear::Extract(&formula, &proof, proof.length-1, 1);
 	output = ClausalExtractor->output_cnf;
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 		
@@ -109,7 +109,7 @@ void pseudomain(int argc, char** argv ) {
 
 int main(int argc, char** argv)
 {
-
+	//whilemultitest(5);
 	pseudomain(argc, argv);
 	//cout << "Hello CMake." << endl;
 	//testmultilinear(5);

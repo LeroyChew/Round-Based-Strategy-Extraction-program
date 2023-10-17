@@ -6,6 +6,19 @@ using namespace std;
 #define endline cout<<endl;
 
 
+void whilemultitest(int level) {
+	QCNF testqbf = QParity(500);
+	ClausalProof testproof = lqrcQParity(500);
+	multilinear::Strategy_Extractor* SE = multilinear::Extract(&testqbf, &testproof, testproof.length-1, 1);
+	//multilinear::while_load(SE->output_cnf, SE, testproof.length - 1);
+	if (remove("multilocal.cnf") != 0) {
+		printf("No file to replace creating new %s file\n", "QRATtest.qrat");
+	}
+	FILE* test_output = fopen("multilocal.cnf", "w");
+	SE->output_cnf->print(test_output);
+	fclose(test_output);
+}
+
 void testmultilinear(int level) {
 	//generate output
 	const char* output_qdimacs = "formulatest.qdimacs";

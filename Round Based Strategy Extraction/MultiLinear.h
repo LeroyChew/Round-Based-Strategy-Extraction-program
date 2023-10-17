@@ -515,7 +515,7 @@ namespace multilinear {
 					qrat->QRATA(mem_val0, meml);
 					Clause mem_val1;//sets meml true when selval=0  and l1
 					mem_val1.addnode(-selvall);
-					mem_val1.addnode(-l0);
+					mem_val1.addnode(-l1);
 					mem_val1.addnode(meml);
 					read.memberships->operator[](lit_counter).def_membership->addnode(mem_val1);//RATA on meml, trivial;
 					qrat->QRATA(mem_val1, meml);
@@ -611,7 +611,136 @@ namespace multilinear {
 
 		return;
 	}
+	void backdef_cell(Strategy_Extractor* SE, IndexLine cell, int level, int line_no1, int new_sink, LinkL<int>* backwards_list ) {
+		ClausalProof* pi = SE->input_proof;
+		Prefix P = SE->input_QBF->prefix;
+		int line_no2 = new_sink;
+		Lit al = Lit(cell.ancestor);
+		Line L1 = pi->operator[](line_no1);
+		QRAT_Proof* qrat = SE->output_QRAT;
+		if (line_no1 >= line_no2) {
+			if (line_no1 == line_no2) {
+				Clause a_assert;
+				a_assert.addnode(al);
+				cell.def_ancestor->addnode(a_assert);//RATA on al: trivial
+				qrat->QRATA(a_assert, al);
+			}
+			else{
+				Clause n_assert;
+				n_assert.addnode(-al);
+				cell.def_ancestor->addnode(n_assert);//RATA on al: trivial
+				qrat->QRATA(n_assert, al);
+			}
+		}
+		else {
 
+			Clause a_long;
+			a_long.addnode(-al);
+			Link1<int>* current_int_container = backwards_list->head;
+			while (current_int_container!=NULL) {
+				int i = current_int_container->data;
+				Line L1child = pi->operator[](i);
+				if (L1child.rule == REDUCTION) {
+					if (L1child.parent0 == line_no1) {
+						Lit a_child = Lit(SE->main_index->operator[](level).operator[](i).ancestor);
+						a_long.addnode(a_child);
+						Clause a_short = Clause();
+						a_short.addnode(-a_child);
+						a_short.addnode(al);
+						cell.def_ancestor->addnode(a_short);//RATA on al: trivial
+						qrat->QRATA(a_short, al);
+					}
+				}
+				if (L1child.rule == RESOLUTION) {
+					//output->output_cnf->add_comment("ancestor resolution");
+					if (L1child.parent0 == line_no1) {
+						Lit cond_child = Lit(SE->main_index->operator[](level).operator[](i).xselval0);
+						a_long.addnode(cond_child);
+						Clause a_short = Clause();
+						a_short.addnode(-cond_child);
+						a_short.addnode(al);
+						cell.def_ancestor->addnode(a_short);//RATA on al: trivial
+						qrat->QRATA(a_short, al);
+					}
+					if (L1child.parent1 == line_no1) {
+						Lit cond_child = Lit(SE->main_index->operator[](level).operator[](i).xselval1);
+						a_long.addnode(cond_child);
+						Clause a_short = Clause();
+						a_short.addnode(-cond_child);
+						a_short.addnode(al);
+						cell.def_ancestor->addnode(a_short);//RATA on al: trivial
+						qrat->QRATA(a_short, al);
+					}
+				}
+				current_int_container = current_int_container->next;
+			}
+			cell.def_ancestor->addnode(a_long);//RATA on -al: blocked on each cond
+			qrat->QRATA(a_long, -al);
+
+
+		}
+		if (L1.rule == RESOLUTION) {
+			Lit ext0l = Lit(cell.xselval0);
+			Lit ext1l = Lit(cell.xselval1);
+			Lit selonl = Lit(SE->main_index->operator[](level).operator[](line_no1).selon);
+			Lit selvall = Lit(SE->main_index->operator[](level).operator[](line_no1).selval);
+
+
+			Clause extOFF0;
+			extOFF0.addnode(selonl);
+			extOFF0.addnode(-al);
+			extOFF0.addnode(ext0l);
+			cell.def_xselval0->addnode(extOFF0);//RATA on ext0l: trivial
+			qrat->QRATA(extOFF0, ext0l);
+
+			Clause extval0;
+			extval0.addnode(selvall);
+			extval0.addnode(-al);
+			extval0.addnode(ext0l);
+			cell.def_xselval0->addnode(extval0);//RATA on ext0l: trivial
+			qrat->QRATA(extval0, ext0l);
+
+			Clause extanc0;
+			extanc0.addnode(al);
+			extanc0.addnode(-ext0l);
+			cell.def_xselval0->addnode(extanc0);//RATA on -ext0l: blocked on -al
+			qrat->QRATA(extanc0, -ext0l);
+
+			Clause extsel0;
+			extsel0.addnode(-selonl);
+			extsel0.addnode(-selvall);
+			extsel0.addnode(-ext0l);
+			cell.def_xselval0->addnode(extsel0);//RATA on -ext0l: blocked on selonl, blocked on selvall
+			qrat->QRATA(extsel0, -ext0l);
+
+			Clause extOFF1;
+			extOFF1.addnode(selonl);
+			extOFF1.addnode(-al);
+			extOFF1.addnode(ext1l);
+			cell.def_xselval1->addnode(extOFF1);//RATA on ext1l: trivial
+			qrat->QRATA(extOFF1, ext1l);
+
+			Clause extval1;
+			extval1.addnode(-selvall);
+			extval1.addnode(-al);
+			extval1.addnode(ext1l);
+			cell.def_xselval1->addnode(extval1);//RATA on ext1l: trivial
+			qrat->QRATA(extval1, ext1l);
+
+			Clause extanc1;
+			extanc1.addnode(al);
+			extanc1.addnode(-ext1l);
+			cell.def_xselval1->addnode(extanc1);//RATA on -ext1l: blocked on al
+			qrat->QRATA(extanc1, -ext1l);
+
+			Clause extsel1;
+			extsel1.addnode(-selonl);
+			extsel1.addnode(selvall);
+			extsel1.addnode(-ext1l);
+			cell.def_xselval1->addnode(extsel1);//RATA on -ext1l: blocked on selonl, blocked on -selvall
+			qrat->QRATA(extsel1, -ext1l);
+		}
+	}
 
 	void backdef_cell(Strategy_Extractor* SE, IndexLine cell , int level, int line_no1) {
 		ClausalProof* pi = SE->input_proof;
@@ -734,6 +863,28 @@ namespace multilinear {
 
 	}
 
+
+	void def_layer(Strategy_Extractor* SE, LinkL<LinkL<IndexLine> >* idx_proof, Prefix P, ClausalProof* pi, int level, int new_sink, LinkL<int>* backwards_list) {
+		LinkL<IndexLine>* read = &SE->main_index->findnode(level)->data;
+		Link1<IndexLine>* current = read->head;
+		int botpos = pi->tail->position;
+		int line_no = 0;
+		while (current != NULL) {//cycles through all lines
+			def_line(SE, current->data, level, line_no);
+			current = current->next;
+			line_no++;
+		}
+		current = read->tail;
+		line_no = botpos;
+		while (current != NULL) {//cycles through all lines
+			backdef_cell(SE, current->data, level, line_no, new_sink, backwards_list);
+			current = current->prev;
+			line_no--;
+		}
+		//idx_proof->addnode(*temp);
+		return;
+	};
+
 	void def_layer(Strategy_Extractor* SE, LinkL<LinkL<IndexLine> >* idx_proof, Prefix P, ClausalProof* pi, int level) {
 		LinkL<IndexLine>* read = &SE->main_index->findnode(level)->data;
 		Link1<IndexLine>* current = read->head;
@@ -775,6 +926,27 @@ namespace multilinear {
 			copyinto(output, lineidx->def_selon);
 		}
 	}
+
+	void Seq_SelonCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no) {
+		IndexLine* lineidx = &SE->main_index->operator[](level).findnode(line_no)->data;
+		ClausalProof* pi = SE->input_proof;
+		Line L = pi->operator[](line_no);
+		if (lineidx->is_selon_defined == 0) {
+			lineidx->is_selon_defined = 1;
+			Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
+			Link1<IndexLine>* layer2 = layer1->data.findnode(line_no);
+			layer2->data.is_selon_defined = 1;
+			//MemberCnfLoad(output, SE, level, L.parent0, L.litpos0);
+			//MemberCnfLoad(output, SE, level, L.parent1, L.litpos1);
+			if (level > 0) {
+				//SelonCnfLoad(output, SE, level - 1, line_no);
+
+			}
+			copyinto(output, lineidx->def_selon);
+		}
+	}
+
+
 	void SelvalCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no) {
 		IndexLine lineidx = SE->main_index->operator[](level).operator[](line_no);
 		ClausalProof* pi = SE->input_proof;
@@ -788,6 +960,25 @@ namespace multilinear {
 			if (level > 0) {
 				SelonCnfLoad(output, SE, level - 1, line_no);
 				SelvalCnfLoad(output, SE, level - 1, line_no);
+
+			}
+			copyinto(output, lineidx.def_selval);
+		}
+	}
+
+	void Seq_SelvalCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no) {
+		IndexLine lineidx = SE->main_index->operator[](level).operator[](line_no);
+		ClausalProof* pi = SE->input_proof;
+		Line L = pi->operator[](line_no);
+		if (lineidx.is_selval_defined == 0) {
+			Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
+			Link1<IndexLine>* layer2 = layer1->data.findnode(line_no);
+			layer2->data.is_selval_defined = 1;
+			//MemberCnfLoad(output, SE, level, L.parent0, L.litpos0);
+			//MemberCnfLoad(output, SE, level, L.parent1, L.litpos1);
+			if (level > 0) {
+				//SelonCnfLoad(output, SE, level - 1, line_no);
+				//SelvalCnfLoad(output, SE, level - 1, line_no);
 
 			}
 			copyinto(output, lineidx.def_selval);
@@ -841,6 +1032,53 @@ namespace multilinear {
 
 	}
 
+	void Seq_MemberCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no, int position) {
+		ClausalProof* pi = SE->input_proof;
+		Prefix P = SE->input_QBF->prefix;
+		Line<Clause> L = pi->operator[](line_no);
+		Clause C = L.clause;
+		Lit l = C.operator[](position);
+		IndexLine* lineidx = &SE->main_index->operator[](level).findnode(line_no)->data;
+		IndexLit* memidx = &(lineidx->memberships->findnode(position)->data);
+		if (memidx->is_membership_defined == 0) {
+			Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
+			Link1<IndexLine>* layer2 = layer1->data.findnode(line_no);
+			Link1<IndexLit>* layer3 = layer2->data.memberships->findnode(position);
+			layer3->data.is_membership_defined = 1;
+			if (L.rule == AXIOM) {
+				//if (P.lvl(C.operator[](position).var)< level) {}
+				//else {}
+
+
+			}
+			if (L.rule == REDUCTION) {
+				Line<Clause> L0 = pi->operator[](L.parent0);
+				Clause P0 = L0.clause;
+				int pos0 = find_a_position(l, P0);
+				//MemberCnfLoad(output, SE, level, L.parent0, pos0);
+
+			}
+			if (L.rule == RESOLUTION) {
+				Line<Clause> L0 = pi->operator[](L.parent0);
+				Clause P0 = L0.clause;
+				int pos0 = find_a_position(l, P0);
+				Line<Clause> L1 = pi->operator[](L.parent1);
+				Clause P1 = L1.clause;
+				int pos1 = find_a_position(l, P1);
+				//SelonCnfLoad(output, SE, level, line_no);
+				//SelvalCnfLoad(output, SE, level, line_no);
+				if (pos0 != -1) {
+					//MemberCnfLoad(output, SE, level, L.parent0, pos0);
+				}
+				if (pos1 != -1) {
+					//MemberCnfLoad(output, SE, level, L.parent1, pos1);
+				}
+			}
+			copyinto(output, memidx->def_membership);
+		}
+
+	}
+
 	void ConnCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no1);
 
 	void XSelCnfLoad(bool val, Cnf* output, Strategy_Extractor* SE, int level, int line_no1) {
@@ -864,6 +1102,32 @@ namespace multilinear {
 				ConnCnfLoad(output, SE, level, line_no1);
 				SelonCnfLoad(output, SE, level, line_no1);
 				SelvalCnfLoad(output, SE, level, line_no1);
+				copyinto(output, cell->def_xselval0);
+			}
+		}
+	}
+
+	void Seq_XSelCnfLoad(bool val, Cnf* output, Strategy_Extractor* SE, int level, int line_no1) {
+		IndexLine* cell = &SE->main_index->operator[](level).findnode(line_no1)->data;
+		ClausalProof* pi = SE->input_proof;
+		Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
+		Link1<IndexLine>* layer2 = layer1->data.findnode(line_no1);
+		if (val) {
+			if (cell->is_xselval1_defined == 0) {
+				layer2->data.is_xselval1_defined = 1;
+				//ConnCnfLoad(output, SE, level, line_no1);
+				//SelonCnfLoad(output, SE, level, line_no1);
+				//SelvalCnfLoad(output, SE, level, line_no1);
+				copyinto(output, cell->def_xselval1);
+
+			}
+		}
+		else {
+			if (cell->is_xselval0_defined == 0) {
+				layer2->data.is_xselval0_defined = 1;
+				//ConnCnfLoad(output, SE, level, line_no1);
+				//SelonCnfLoad(output, SE, level, line_no1);
+				//SelvalCnfLoad(output, SE, level, line_no1);
 				copyinto(output, cell->def_xselval0);
 			}
 		}
@@ -902,6 +1166,39 @@ namespace multilinear {
 		}
 	}
 
+	void Seq_ConnCnfLoad(Cnf* output, Strategy_Extractor* SE, int level, int line_no1) {
+		IndexLine cell = SE->main_index->operator[](level).operator[](line_no1);
+		if (cell.is_ancestor_defined == 0) {
+			Link1<LinkL<IndexLine>>* layer1 = SE->main_index->findnode(level);
+			Link1<IndexLine>* layer2 = layer1->data.findnode(line_no1);
+			layer2->data.is_ancestor_defined = 1;
+			ClausalProof* pi = SE->input_proof;
+			int line_no2 = pi->tail->position;
+			if (line_no1 == line_no2) {
+			}
+			else {
+				for (int i = line_no1 + 1; i <= line_no2; i++) {
+					Line L1child = pi->operator[](i);
+					if (L1child.rule == REDUCTION) {
+						if (L1child.parent0 == line_no1) {
+							//ConnCnfLoad(output, SE, level, i);
+						}
+					}
+					if (L1child.rule == RESOLUTION) {
+						if (L1child.parent0 == line_no1) {
+							//XSelCnfLoad(0, output, SE, level, i);
+						}
+						if (L1child.parent1 == line_no1) {
+							//XSelCnfLoad(1, output, SE, level, i);
+						}
+					}
+				}
+
+			}
+			copyinto(output, cell.def_ancestor);
+		}
+	}
+
 	void StrategyCnfLoad(Cnf* output, Strategy_Extractor* SE, Var u) {
 		//StrategyCnfLoad
 		Link1<IndexStrat>* current_u = SE->strategy_index->head;
@@ -926,6 +1223,209 @@ namespace multilinear {
 		}
 
 
+	}
+
+	void Seq_StrategyCnfLoad(Cnf* output, Strategy_Extractor* SE, Var u) {
+		//StrategyCnfLoad
+		Link1<IndexStrat>* current_u = SE->strategy_index->head;
+		while (current_u != NULL) {
+			if (current_u->data.u == u) {
+				if (current_u->data.is_strategy_defined == 0) {
+					current_u->data.is_strategy_defined = 1;
+					Link1<int>* current_line = current_u->data.axioms->head;
+					while (current_line != NULL) {
+						int level = SE->input_QBF->prefix.lvl(u) - 1;
+						int axpos = current_line->data;
+						//int botpos = SE->input_proof->tail->position;
+						//ConnCnfLoad(output, SE, level, axpos);
+						current_line = current_line->next;
+					}
+
+					copyinto(output, current_u->data.def_strategy);
+				}
+			}
+			current_u = current_u->next;
+
+		}
+
+
+	}
+
+	LinkL<int>* connectedlines(ClausalProof* proof_address, int a_base) {
+		LinkL<int>* connected_lines = new LinkL<int>;
+		connected_lines->addnode(a_base);
+		Link1<int>* current = connected_lines->head;
+		while (current != NULL) {//while empty list
+			int parent0 = proof_address->operator[](current->data).parent0;
+			if (parent0 > -1) {
+				bool is_repeat = 0;
+				Link1<int>* current2 = connected_lines->head;
+				while (current2 != NULL) {
+
+					if (current2->data == parent0) {
+						is_repeat = 1;
+					}
+					current2 = current2->next;
+				}
+				if (!is_repeat) {
+					connected_lines->addnode(parent0);
+				}
+			}
+			int parent1 = proof_address->operator[](current->data).parent1;
+			if (parent1 > -1) {
+				bool is_repeat = 0;
+				Link1<int>* current2 = connected_lines->head;
+				while (current2 != NULL) {
+
+					if (current2->data == parent1) {
+						is_repeat = 1;
+					}
+					current2 = current2->next;
+				}
+				if (!is_repeat) {
+					connected_lines->addnode(parent1);
+				}
+			}
+			current = current->next;
+		}
+		return connected_lines;
+	}
+
+	void while_load(Cnf* output, Strategy_Extractor* SE, int a_base, int i, LinkL<int>* connected_lines) {
+
+		//connected_lines->addnode(a_base);
+		ClausalProof* proof_address = SE->input_proof;
+		// = connectedlines(proof_address, a_base);
+		Link1<int>* current = connected_lines->head;
+
+
+		int max_lvl = SE->input_QBF->prefix.tail->data.level;
+			current = connected_lines->tail;
+			while (current != NULL) {
+				//load all clauses systematically
+				IndexLine lineindex = SE->main_index->operator[](i).operator[](current->data);
+				SE->output_cnf->add_comment("Defining restricted proof line:");
+				SE->output_cnf->add_comment("selon:");
+				copyinto(output, lineindex.def_selon);
+				SE->output_cnf->add_comment("selval:");
+				copyinto(output, lineindex.def_selval);
+
+				SE->output_cnf->add_comment("membership:");
+				Link1<IndexLit>* litindex = lineindex.memberships->head;
+				while (litindex != NULL) {
+					copyinto(output, litindex->data.def_membership);
+					litindex = litindex->next;
+				}
+
+				current = current->prev;
+			}
+			current = connected_lines->head;
+			while (current != NULL) {
+				SE->output_cnf->add_comment("Defining connectivity from a_base");
+				IndexLine lineindex = SE->main_index->operator[](i).operator[](current->data);
+				SE->output_cnf->add_comment("anc:");
+				copyinto(output, lineindex.def_ancestor);
+				SE->output_cnf->add_comment("exselval0:");
+				copyinto(output, lineindex.def_xselval0);
+				SE->output_cnf->add_comment("exselval1:");
+				copyinto(output, lineindex.def_xselval1);
+				current = current->next;
+			}
+		return;
+	}
+
+	void while_load(Cnf* output, Strategy_Extractor* SE, int a_base) {
+		//connected_lines->addnode(a_base);
+		ClausalProof* proof_address = SE->input_proof;
+		LinkL<int>* connected_lines = connectedlines(proof_address, a_base);
+		Link1<int>* current = connected_lines->head;
+
+		
+		int max_lvl = SE->input_QBF->prefix.tail->data.level;
+		for (int i = 0; i <= max_lvl; i++) {
+			current = connected_lines->tail;
+			while (current != NULL) {
+				//load all clauses systematically
+				IndexLine lineindex = SE->main_index->operator[](i).operator[](current->data);
+				SE->output_cnf->add_comment("Defining restricted proof line:");
+				SE->output_cnf->add_comment("selon:");
+				copyinto(output, lineindex.def_selon);
+				SE->output_cnf->add_comment("selval:");
+				copyinto(output, lineindex.def_selval);
+				
+				SE->output_cnf->add_comment("membership:");
+				Link1<IndexLit>* litindex = lineindex.memberships->head;
+				while (litindex!=NULL) {
+						copyinto(output, litindex->data.def_membership);
+					litindex = litindex->next;
+				}
+				
+				current = current->prev;
+			}
+			current = connected_lines->head;
+			while (current != NULL) {
+				SE->output_cnf->add_comment("Defining connectivity from a_base");
+				IndexLine lineindex = SE->main_index->operator[](i).operator[](current->data);
+				SE->output_cnf->add_comment("anc:");
+				copyinto(output, lineindex.def_ancestor);
+				SE->output_cnf->add_comment("exselval0:");
+				copyinto(output, lineindex.def_xselval0);
+				SE->output_cnf->add_comment("exselval1:");
+				copyinto(output, lineindex.def_xselval1);
+				current = current->next;
+			}
+		}
+		return;
+	}
+
+	void def_universal(Strategy_Extractor* SE, LinkL <IndexStrat>* idx_strat, Var u, int a_base, bool is_unsat) {//version for a_base
+		Link1<IndexStrat>* current_u = idx_strat->head;
+		Prefix P = SE->input_QBF->prefix;
+		ClausalProof* pi = SE->input_proof;
+		QRAT_Proof* qrat = SE->output_QRAT;
+		while (current_u != NULL) {
+			if (current_u->data.u == u) {
+				SE->output_cnf->add_comment("Strategy clauses:");
+				qrat->add_comment("Strategy clauses:");
+				int level = P.lvl(u) - 1;
+				Link1<int>* current_line = current_u->data.axioms->head;
+				Lit ul = Lit(current_u->data.strategy);
+				Clause stratlong;
+				stratlong.addnode(ul);
+				while (current_line != NULL) {
+					int axpos = current_line->data;
+					int upos = find_a_position(Lit(u), pi->operator[](axpos).clause);
+					int botpos = a_base;
+					Lit conn = Lit(SE->main_index->operator[](level).operator[](axpos).ancestor);
+					Clause stratshort;
+					stratshort.addnode(-conn);
+					stratshort.addnode(-ul);
+					current_u->data.def_strategy->addnode(stratshort);//RATA on -ul; trivial
+					qrat->QRATA(stratshort, -ul);
+					stratlong.addnode(conn);
+
+					current_line = current_line->next;
+				}
+				current_u->data.def_strategy->addnode(stratlong);//RATA on ul; each blocked on ex;
+				qrat->QRATA(stratlong, ul, "Long Strategy Clause");
+				//clauses not destined for qrat, only for propositional checks
+				//output->output_cnf->add_comment("equivalence clauses for universal");
+				copyinto(SE->output_cnf, current_u->data.def_strategy);
+				Clause uforward;
+				uforward.addnode(-ul);
+				uforward.addnode(Lit(u));
+				if (is_unsat) {
+					SE->output_cnf->addnode(uforward);//not acceptable in QRAT
+				}
+				Clause ubackward;
+				ubackward.addnode(ul);
+				ubackward.addnode(-Lit(u));
+				if (is_unsat) {
+					SE->output_cnf->addnode(ubackward);//not acceptable in QRAT
+				}
+			}
+			current_u = current_u->next;
+		}
 	}
 
 	void def_universal(Strategy_Extractor* SE, LinkL <IndexStrat>* idx_strat,  Var u) {
@@ -997,6 +1497,95 @@ namespace multilinear {
 			current_u = current_u->next;
 		}
 
+	}
+
+
+	bool is_last_universal(Link1<Quantifier>* inputQ) {
+		if (inputQ==NULL) {
+			return 0;
+		}
+		if (inputQ->data.is_universal==0) {
+			return 0;
+		}
+
+		Link1<Quantifier>* currentQ = inputQ->next;
+		while (currentQ!=NULL) {
+			if (currentQ->data.is_universal == 1) {
+				return 0;
+			}
+			currentQ = currentQ->next;
+		}
+		return 1;
+	}
+
+	void negatebase(Cnf* output, Strategy_Extractor* SE, int a_base, bool is_unsat) {
+		if (is_unsat) {
+			ClausalProof* proof = SE->input_proof;
+			Clause clause = proof->operator[](a_base).clause;
+			Link1<Lit>* current = clause.head;
+			while (current != NULL) {
+				Lit l = current->data;
+				Clause unit;
+				unit.addnode(-l);
+				output->addnode(unit);
+				current = current->next;
+			}
+		}
+		return;
+	}
+
+	Strategy_Extractor* Extract(QCNF* phi, ClausalProof* pi, int a_base, bool is_unsat) {//copy for a_base inclusion, also attempts to avoid stack overflow
+		Strategy_Extractor* output = new Strategy_Extractor(phi, pi);
+		*(output->output_cnf) = copy(phi->matrix);
+		output->main_index = new LinkL<LinkL<IndexLine>>;
+		output->strategy_index = new LinkL<IndexStrat>;
+		int max_var = output->base_max_var;
+		Link1<Quantifier>* currentQ = phi->prefix.head;
+		int layer_level = 0;
+		LinkL<int>* backwards_list = connectedlines(pi, a_base);
+		max_var = add_layer(max_var, output->main_index, output->long_prefix, pi);
+		def_layer(output, output->main_index, output->input_QBF->prefix, pi, layer_level, a_base, backwards_list);
+		while_load(output->output_cnf, output, a_base, layer_level, backwards_list);
+		while (currentQ != NULL) {
+			if (currentQ->data.is_universal) {// add strategy
+				max_var = add_universal(max_var, output->strategy_index, output->long_prefix, pi, currentQ->data.var);
+				def_universal(output, output->strategy_index, currentQ->data.var, a_base, is_unsat);
+				if (is_last_universal(currentQ)) {
+					negatebase(output->output_cnf, output, a_base, is_unsat);
+					output->idx_max_var = max_var;
+					return output;
+				}
+				//look ahead for any more universals
+				//while loop for 
+				//
+			}
+				//add the base variables to idx_prefix
+			if (currentQ->data.is_universal) {
+				output->long_prefix->addvar(-currentQ->data.var);
+			}
+			else {
+				output->long_prefix->addvar(currentQ->data.var);
+			}
+			bool is_next_quant_a_change = 1;
+			if (currentQ->next != NULL) {
+
+				if (currentQ->next->data.is_universal == currentQ->data.is_universal) {
+					is_next_quant_a_change = 0;
+				}
+			}
+
+			if (is_next_quant_a_change) {// add restricted proof
+				layer_level++;
+				max_var = add_layer(max_var, output->main_index, output->long_prefix, pi);
+				def_layer(output, output->main_index, output->input_QBF->prefix, pi, layer_level, a_base, backwards_list);
+				while_load(output->output_cnf, output, a_base, layer_level, backwards_list);
+			}
+				currentQ = currentQ->next;
+		}
+
+		negatebase(output->output_cnf, output, a_base, is_unsat);
+		output->idx_max_var = max_var;
+		return output;
 	}
 
 	Strategy_Extractor* Extract(QCNF* phi, ClausalProof* pi) {
