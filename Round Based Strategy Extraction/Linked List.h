@@ -110,7 +110,13 @@ template <typename T> struct LinkL{
 		}
 	}
 
-	Link1 <T>* findnode(int idx) {
+	void makeempty() {
+		while (tail != NULL) {
+			rmvnode(tail);
+		}
+	}
+
+	Link1 <T>* findnode(int idx) const {
 		Link1 <T>* current = head;
 		 while(current!=NULL) {
 			if (idx == 0) {
@@ -122,8 +128,17 @@ template <typename T> struct LinkL{
 		 return current;
 	}
 
-	T operator [](int idx) {
+	T operator [](int idx) const{
 		return findnode(idx)->data;
+	}
+
+	void copy(LinkL<T>* into) {
+		into->makeempty();
+		Link1 <T>* current = head;
+		while (current != NULL) {
+			into->addnode(current->data);
+			current = current->next;
+		}
 	}
 };
 

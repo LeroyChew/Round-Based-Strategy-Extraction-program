@@ -148,6 +148,17 @@ Prefix copy(Prefix input) {
 	return output;
 }
 
+bool is_universal(Var u, Prefix P) {
+	Link1<Quantifier>* current = P.head;
+	while (current != NULL) {
+		if ((current->data.var == u) && (current->data.is_universal) ) {
+			return 1;
+		}
+		current = current->next;
+	}
+	return 0;
+}
+
 int universal_index(Var u, Prefix P) {
 	Link1<Quantifier>* current = P.head;
 	int i = 0;
@@ -174,7 +185,7 @@ struct QCNF {
 
 void print_qrc(FILE* file, QCNF formula, ClausalProof proof) {
 	fprintf(file, "p qrp ");
-	fprintf(file, "%i", formula.matrix.max_var());
+	fprintf(file, "%i", formula.matrix.mvar);
 	fprintf(file, " ");
 	fprintf(file, "%i", formula.matrix.length);
 	fprintf(file, "\n");

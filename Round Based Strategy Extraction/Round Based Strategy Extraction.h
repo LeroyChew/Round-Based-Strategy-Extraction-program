@@ -11,4 +11,5 @@
 #include "Connectivity.h"
 #include "Independence.h"
 #include "File.h"
+#include "CircuitExtraction.h"
 // TODO: Reference additional headers your program requires here.

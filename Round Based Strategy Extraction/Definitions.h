@@ -21,7 +21,7 @@ namespace idx {
 		}
 		Strategy_Extractor(QCNF* phi, ClausalProof* pi) {
 			QBF = new QCNF();
-			QBF->matrix = copy(phi->matrix);
+			QBF->matrix = ccopy(phi->matrix);
 			QBF->prefix = copy(phi->prefix);
 			input_proof = pi;
 			output_cnf = new Cnf;
@@ -1176,10 +1176,10 @@ namespace idx {
 
 	Strategy_Extractor* Extract(QCNF* phi, ClausalProof* pi) {
 		Strategy_Extractor* output = new Strategy_Extractor(phi, pi);
-		*(output->output_cnf) = copy(phi->matrix);
+		*(output->output_cnf) = ccopy(phi->matrix);
 		output->main_index = new Index;
 		output->main_index->idx_prefix = new Prefix();
-		output->main_index->base_max_var = phi->matrix.max_var();
+		output->main_index->base_max_var = phi->matrix.mvar;
 		output->main_index->Idx_Proof = new LinkL<LinkL<Index1> >;
 		output->main_index->Idx_Conn = new LinkL<LinkL<LinkL<Index2>>>;
 		output->main_index->Idx_Strategy = new LinkL<Index3>;

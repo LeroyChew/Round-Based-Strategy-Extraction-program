@@ -27,7 +27,7 @@ void pseudomain(int argc, char** argv ) {
 		qdimacsname = argv[1];
 	}
 	else {
-		printf("Not enough arguments, defaulting to example mode: QPARITY(200)");
+		printf("Not enough arguments, defaulting to example mode: QPARITY(100)");
 		file_reading = 0;
 	}
 	
@@ -62,8 +62,8 @@ void pseudomain(int argc, char** argv ) {
 	}
 		
 	else{
-		formula = QParity(200);
-		proof = lqrcQParity(200);
+		formula = QParity(100);
+		proof = lqrcQParity(100);
 
 		if (file_writing) {
 			const char* default_qdimacs = "formula.qdimacs";
@@ -89,6 +89,10 @@ void pseudomain(int argc, char** argv ) {
 
 	start = std::clock();
 	multilinear::Strategy_Extractor* ClausalExtractor = multilinear::Extract(&formula, &proof, proof.length-1, 1);
+	*(ClausalExtractor->output_cnf) = ccopy(formula.matrix);
+	copyinto((ClausalExtractor->output_cnf), (ClausalExtractor->extension_clauses));
+	copyinto((ClausalExtractor->output_cnf), (ClausalExtractor->negated_assumptions));
+	ClausalExtractor->output_cnf->update_max_var();
 	output = ClausalExtractor->output_cnf;
 	duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
 		
@@ -104,13 +108,15 @@ void pseudomain(int argc, char** argv ) {
 		fclose(cnffile);
 	}
 	std::cout << endl<< "time for constructing CNF " << duration << endl;
-	std::cout << endl << "number of new variables " << output->max_var()-formula.matrix.max_var() << endl;
+	std::cout << endl << "number of new variables " << output->calculate_max_var() -formula.matrix.mvar << endl;
 }
 
 int main(int argc, char** argv)
 {
 	//whilemultitest(5);
-	pseudomain(argc, argv);
+	//exprestest(5);
+	circuittest(0);
+	//pseudomain(argc, argv);
 	//cout << "Hello CMake." << endl;
 	//testmultilinear(5);
 	return 0;

@@ -2,19 +2,146 @@
 
 #include "Examples.h"
 using namespace std;
-
+using namespace ccircuits;
 #define endline cout<<endl;
 
+void circuit_truth_table(Circuit C, LinkL<int>* assignment, int n ) {
+	if (n == 0) {
+		int answer= C.int_compute(*assignment);
+		Link1<int>* current = assignment->head;
+		while (current != NULL) {
+			cout << current->data << " ";
+			current = current->next;
+		}
+		cout << answer << endl;
+	}
+	else {
+		LinkL<int>* ass0 = new LinkL<int>;
+		assignment->copy(ass0);
+		ass0->addnode(-n);
+		circuit_truth_table(C, ass0, n - 1);
+
+		LinkL<int>* ass1 = new LinkL<int>;
+		assignment->copy(ass1);
+		ass1->addnode(n);
+		circuit_truth_table(C, ass1, n - 1);
+	}
+}
+
+
+void circuittest(int level) {
+	/*
+	Circuit tcirc = Circuit(10);
+	tcirc.addAND(1, 2);//11
+	tcirc.addXOR(2, 5);//12
+	tcirc.addNOT(4);//13
+	tcirc.addXOR(3, 6);//14
+	tcirc.addOR(5, 7);//15
+	LinkL<int> triple; triple.addnode(8); triple.addnode(9); triple.addnode(10); tcirc.addOR(triple);//16
+	tcirc.addXOR(12, 13);//17
+	tcirc.addXOR(13, 14);//18
+	tcirc.addAND(15, 16);//19
+	tcirc.addAND(11, 17); //20
+	tcirc.addAND(17, 18); //21
+	tcirc.addOR(21, 19);//22
+	tcirc.addAND(20, 22);
+	LinkL<int> full_input;
+	full_input.addnode(1);
+	full_input.addnode(2);
+	full_input.addnode(3);
+	full_input.addnode(4);
+	full_input.addnode(-5);
+	full_input.addnode(-6);
+	full_input.addnode(7);
+	full_input.addnode(-8);
+	full_input.addnode(-9);
+	full_input.addnode(10);
+	LinkL<int> return_value = tcirc.compute(full_input);
+	*/
+	QCNF testqbf = QParity(4);
+	ClausalProof testproof = lqrcQParity(4);
+	circuitmultilinear::Strategy_Extractor* SE = circuitmultilinear::Extract(&testqbf, &testproof, testproof.length - 1, 1);
+	if (remove("multilocal.cnf") != 0) {
+		printf("No file to replace creating new %s file\n", "QRATtest.qrat");
+	}
+	FILE* test_output = fopen("multilocal.cnf", "w");
+	SE->load_output_cnf_negated();
+	SE->output_cnf->print(test_output);
+	fclose(test_output);
+
+	if (level < 1) {
+		//SE->main_index->tail->data.tail->prev->data.display();
+		SE->display_index();
+		//circuit_truth_table(SE->output_circuit->head->data, new LinkL<int>, 50);
+		LinkL<int> trial_input;
+		for (int i = 1; i < 5; i++) {
+			trial_input.addnode(i);
+		}
+		//testproof.display();
+		
+		//ClausalProof r0proof = circuitmultilinear::restricted_proof(SE, trial_input, 0);
+		//r0proof.display();
+		
+		ClausalProof r1proof= circuitmultilinear::restricted_proof(SE, trial_input, 1);
+		r1proof.display();
+		
+		
+		//Link1<int>* current = return_value.head;
+		//while (current != NULL) {
+		//	cout << current->data << " ";
+		//	current = current->next;
+		//}
+		//cout << endl;
+	}
+}
+
+
+void exprestest(int level) {
+	ExpResProof eproof = expQParity(4);
+	multilinear::Strategy_Extractor* SE = multilinear::Extract(&(eproof.ExpPhi), &(eproof.pi), eproof.pi.length - 1, 1);
+	Cnf output;
+	output = ccopy(eproof.Phi.matrix);
+	Cnf quickdef = QuickDef(eproof.index);
+	copyinto(&output, &quickdef);
+	copyinto(&output, SE->extension_clauses);
+	if (remove("sat.cnf") != 0) {
+		printf("No file to replace creating new %s file\n", "sat.cnf");
+	}
+	FILE* file_output = fopen("sat.cnf", "w");
+	output.print(file_output);
+	fclose(file_output);
+
+	if (remove("unsat.cnf") != 0) {
+		printf("No file to replace creating new %s file\n", "unsat.cnf");
+	}
+	copyinto(&output, SE->negated_assumptions);
+	FILE* file_output2 = fopen("unsat.cnf", "w");
+	output.print(file_output2);
+	fclose(file_output2);
+
+	eproof.ExpPhi.prefix.display();
+	endline
+	eproof.ExpPhi.matrix.display();
+	endline
+	endline
+	eproof.pi.display();
+	//endline
+	//SE->extension_clauses->display();
+	endline
+	SE->negated_assumptions->display();
+	return;
+}
 
 void whilemultitest(int level) {
-	QCNF testqbf = QParity(500);
-	ClausalProof testproof = lqrcQParity(500);
+	QCNF testqbf = QParity(50);
+	ClausalProof testproof = lqrcQParity(50);
 	multilinear::Strategy_Extractor* SE = multilinear::Extract(&testqbf, &testproof, testproof.length-1, 1);
 	//multilinear::while_load(SE->output_cnf, SE, testproof.length - 1);
 	if (remove("multilocal.cnf") != 0) {
 		printf("No file to replace creating new %s file\n", "QRATtest.qrat");
 	}
 	FILE* test_output = fopen("multilocal.cnf", "w");
+	SE->load_output_cnf_negated();
 	SE->output_cnf->print(test_output);
 	fclose(test_output);
 }
@@ -71,7 +198,7 @@ void testproof(int level) {
 	Clause A2; A2.addnode(x); A2.addnode(u); A2.addnode(-t);
 	Clause A3; A3.addnode(t);
 	Cnf F; F.addnode(A1); F.addnode(A2); F.addnode(A3);
-	Cnf G = copy(F);
+	Cnf G = ccopy(F);
 	Prefix P; P.addvar(1); P.addvar(-2); P.addvar(3);
 	QCNF Phi; Phi.matrix = F; Phi.prefix = P;
 	ClausalProof pi; pi.add_ax(A1); pi.add_ax(A2); pi.add_ax(A3);

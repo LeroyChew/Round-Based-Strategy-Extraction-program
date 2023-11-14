@@ -20,7 +20,7 @@ struct QRAT_Rule {
 };
 
 bool propagation(Cnf Phi) {
-	Cnf Phicopy = copy( Phi);
+	Cnf Phicopy = ccopy( Phi);
 	Link1<Clause>* currentC = Phicopy.head;
 	while (currentC!=NULL) {
 		if (currentC->data.length < 2) {
@@ -136,7 +136,7 @@ struct QRAT_Proof {
 	}
 
 	void ATA(Clause C) {
-		Clause D = copy(C);
+		Clause D = ccopy(C);
 		D.sortlist();
 		QRAT_Line* temp = new QRAT_Line(D, tail, NULL, ruleATA, length, Lit(0));
 		if (head == NULL) {
@@ -152,7 +152,7 @@ struct QRAT_Proof {
 
 	bool checkATA(QRAT_Line* line, Cnf* phi) {
 		Clause C = line->clause;
-		Cnf checkingcnf = copy(phi);
+		Cnf checkingcnf = ccopy(phi);
 		Link1<Lit>* currentl = C.head;
 		while (currentl != NULL) {
 			Clause barl = Clause();
@@ -197,7 +197,7 @@ struct QRAT_Proof {
 	}
 
 	void QRATA(Clause C, Lit l) {
-		Clause D = copy(C);
+		Clause D = ccopy(C);
 		D.sortlist();
 		QRAT_Line* temp = new QRAT_Line(D, tail, NULL, ruleQRATA, length, l);
 		if (head == NULL) {
@@ -219,7 +219,7 @@ struct QRAT_Proof {
 			Clause D = currentD->data;
 			if (contains(-linelit, D)) {
 				Link1<Lit>* currentl = D.head;
-				Cnf checkingcnfD = copy(*phi);
+				Cnf checkingcnfD = ccopy(*phi);
 				while (currentl != NULL) {
 					Lit l = currentl->data;
 					if ((l != linelit)&& (Phi.prefix.lvl(linelit.var) >= Phi.prefix.lvl(l.var))) {
@@ -268,7 +268,7 @@ struct QRAT_Proof {
 	}
 
 	void QRATA(Clause C, Lit l, const char* comment) {
-		Clause D = copy(C);
+		Clause D = ccopy(C);
 		D.sortlist();
 		add_comment(comment);
 		QRAT_Line* temp = new QRAT_Line(D, tail, NULL, ruleQRATA, length, l);
@@ -298,7 +298,7 @@ struct QRAT_Proof {
 	}
 
 	bool full_check() {
-		Cnf current_cnf = copy(Phi.matrix);
+		Cnf current_cnf = ccopy(Phi.matrix);
 		QRAT_Line* current= head;
 		bool is_rolling_checked=1;
 		while (current != NULL) {

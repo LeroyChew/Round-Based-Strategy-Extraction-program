@@ -46,7 +46,7 @@ struct Lit {
 	}
 	
 
-	int DIMACS() {
+	int DIMACS() const {
 		if (is_pos == 0) {
 			return -var;
 		}
@@ -57,7 +57,7 @@ struct Lit {
 
 	
 
-	void display() {
+	void display() const {
 		std::cout << DIMACS();
 	}
 };
@@ -74,8 +74,10 @@ Lit operator -(Lit p) {
 	return l;
 }
 
+
+
 struct Clause : LinkL<Lit> {
-	void display() {
+	void display() const{
 		Link1<Lit>* current = head;
 		while (current != NULL) {
 			current->data.display();
@@ -85,7 +87,37 @@ struct Clause : LinkL<Lit> {
 		cout << 0;
 	}
 
-	void stream_dimacs(std::fstream newfile) {
+	bool is_tautological() const{
+		Link1<Lit>* current1 = head;
+		while (current1 != NULL) {
+			Link1<Lit>* current2 = current1;
+			while (current2 != NULL) {
+				if (current1->data == -(current2->data)) {
+					return 1;
+				}
+				current2 = current2->next;
+			}
+			current1 = current1->next;
+		}
+		return 0;
+	}
+
+	bool is_contained(Lit l) const {
+		Link1<Lit>* current = head;
+		while (current!=NULL) {
+			if (current->data == l) {
+				return 1;
+			}
+			current = current->next;
+		}
+		return 0;
+	}
+
+	bool is_contained(Var v) const {
+		return is_contained(Lit(v)) || is_contained(Lit(-v));
+	}
+
+	void stream_dimacs(std::fstream newfile) const {
 		if (newfile.is_open()) {
 			Link1<Lit>* current = head;
 			while (current != NULL) {
@@ -97,7 +129,7 @@ struct Clause : LinkL<Lit> {
 		}
 	}
 
-	void print(FILE* file) {
+	void print(FILE* file) const {
 		Link1<Lit>* current = head;
 		while (current != NULL) {
 			fprintf(file, "%i", current->data.DIMACS());
@@ -199,8 +231,9 @@ struct Comment {
 
 struct Cnf : LinkL<Clause> {
 	LinkL<Comment> commentary;
-	Var max_var() {
-		int max = 0;
+	Var mvar;
+	Var calculate_max_var() {
+		int max = mvar;
 		Link1<Clause>* current = head;
 
 		while (current != NULL) {
@@ -213,10 +246,16 @@ struct Cnf : LinkL<Clause> {
 
 		return max;
 	}
+
+	void update_max_var() {
+		mvar = calculate_max_var();
+	}
+
 	Cnf() {
 		head = NULL;
 		tail = NULL;
 		length = 0;
+		mvar = 0;
 		commentary= LinkL<Comment>();
 	}
 
@@ -227,7 +266,7 @@ struct Cnf : LinkL<Clause> {
 		}
 	}
 
-	void display() {
+	void display() const {
 		Link1<Clause>* current = head;
 		Link1<Comment>* current_comment_head = commentary.head;
 		while (current != NULL) {
@@ -252,9 +291,9 @@ struct Cnf : LinkL<Clause> {
 		}
 	}
 
-	void print_preamble(FILE* file) {
+	void print_preamble(FILE* file) const {
 		fprintf(file, "p cnf ");
-		fprintf(file, "%i", max_var());
+		fprintf(file, "%i", mvar);
 		fprintf(file, " ");
 		fprintf(file, "%i", length);
 	}
@@ -293,6 +332,11 @@ struct Cnf : LinkL<Clause> {
 
 	void add_comment(const char* comment) {
 		Comment temp = Comment(length, comment);
+		commentary.addnode(temp);
+	}
+
+	void add_comment(int line, const char* comment) {
+		Comment temp = Comment(line, comment);
 		commentary.addnode(temp);
 	}
 };
@@ -359,6 +403,7 @@ struct Rule {
 #define EXCHANGE  Rule(2,1)
 #define REDUCTION  Rule(3,1)
 #define RESOLUTION Rule(4,2)
+#define SELECT Rule(5,2)
 
 void Rule::display() {
 	if (operator==(AXIOM)) {
@@ -366,6 +411,9 @@ void Rule::display() {
 	}
 	if (operator==(RESOLUTION)) {
 		cout << "Res";
+	}
+	if (operator==(SELECT)) {
+		cout << "Sel";
 	}
 	if (operator==(REDUCTION)) {
 		cout << "Red";
@@ -418,7 +466,7 @@ bool contains(Lit l, Clause C) {
 
 }
 
-Clause copy(Clause C) {
+Clause ccopy(Clause C) {
 	Link1<Lit>* current = C.head;
 	Clause D = Clause();
 	while (current != NULL) {
@@ -459,11 +507,11 @@ Clause resolve(Clause C1, Clause C2, Lit p) {// returns the resolvent of two cla
 			return D;
 		}
 		else {
-			return copy(C2);
+			return ccopy(C2);
 		}
 	}
 	else {
-		return copy(C1);
+		return ccopy(C1);
 	}
 }
 
@@ -566,9 +614,46 @@ struct ClausalProof : Proof<Clause> {
 			cout << endl;
 			current = current->next;
 		}
-
-
 	}
+
+	LinkL<int> DP(Var x, LinkL<int>set1) {
+		LinkL<int> output;
+		Link1<int>* current1 = set1.head;
+		while (current1 != NULL) {
+			if (operator[](current1->data).clause.is_contained(x)) {
+
+				bool is_positive=0;
+				if (operator[](current1->data).clause.is_contained(Lit(x))) {
+					is_positive = 1;
+				}
+
+				Link1<int>* current2 = current1;
+				while (current2 != NULL) {
+					if (is_positive) {
+						if (operator[](current2->data).clause.is_contained(-Lit(x))) {
+							add_res(current1->data, current2->data, -Lit(x));
+							output.addnode(tail->position);
+						}
+					}
+					else {
+						if (operator[](current2->data).clause.is_contained(Lit(x))) {
+							add_res(current1->data, current2->data, Lit(x));
+							output.addnode(tail->position);
+						}
+					}
+					current2 = current2->next;
+				}
+				
+			}
+			else {
+				output.addnode(current1->data);
+			}
+			current1 = current1->next;
+		}
+	}
+
+
+
 	void addline(Clause C) {
 		addnode(Line<Clause>(C));
 	}
@@ -811,7 +896,7 @@ struct ClausalProof : Proof<Clause> {
 	}
 
 	void add_ax(Clause C) {
-		Clause D = copy(C);
+		Clause D = ccopy(C);
 		addline(D);
 	}
 
@@ -872,6 +957,27 @@ struct ClausalProof : Proof<Clause> {
 		addnode(*temp);
  	}
 
+	void add_sel(int line0, int line1, bool dir) {
+		Line<Clause> L0 = operator[](line0);
+		Clause C0 = L0.clause;
+		Line<Clause> L1 = operator[](line1);
+		Clause C1 = L1.clause;
+		Clause D;
+		if (dir) {
+			D = C1;
+		}
+		else {
+			D = C0;
+		}
+		Line<Clause>* temp = new Line<Clause>;
+		temp->clause = D;
+		temp->rule = SELECT;
+		temp->parent0 = line0;
+		temp->parent1 = line1;
+		addnode(*temp);
+	}
+
+
 	void print(FILE* file) {
 		fprintf(file, "p qrp ");
 		fprintf(file, "%i", max_var());
@@ -910,11 +1016,11 @@ struct ClausalProof : Proof<Clause> {
 	//}
 };
 
-Cnf copy(Cnf input) {
+Cnf ccopy(Cnf input) {
 	Cnf output;
 	Link1<Clause>* current = input.head;
 	while (current != NULL) {
-		Clause C = copy(current->data);
+		Clause C = ccopy(current->data);
 		output.addnode(C);
 		current = current->next;
 	}
@@ -927,13 +1033,19 @@ void copyinto(Cnf* output, Cnf* input) {
 		output->addnode(current->data);
 		current = current->next;
 	}
+
+	Link1<Comment>* comm = input->commentary.head;
+	while (comm != NULL) {
+		output->add_comment(comm->data.line_no + input->length, comm->data.comment);
+		comm = comm->next;
+	}
 }
 
-Cnf copy(Cnf *input) {
+Cnf ccopy(Cnf *input) {
 	Cnf output;
 	Link1<Clause>* current = input->head;
 	while (current != NULL) {
-		Clause C = copy(current->data);
+		Clause C = ccopy(current->data);
 		output.addnode(C);
 		current = current->next;
 	}

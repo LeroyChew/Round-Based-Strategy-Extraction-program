@@ -1,11 +1,14 @@
 #pragma once
 #include "QRAT.h"
 #include "File.h"
+#include "Circuits.h"
+//using namespace ccircuits;
 namespace multilinear {
 	struct IndexLit {
 		bool is_membership_defined;
 		Var membership;
 		Cnf* def_membership;
+		//Circuit* circ_membership;
 		Lit lit;
 
 		IndexLit() {
@@ -13,6 +16,7 @@ namespace multilinear {
 			membership = 0;
 			lit = Lit();
 			def_membership = new Cnf;
+			//circ_membership = new Circuit;
 		}
 	};
 	struct IndexLine {
@@ -34,16 +38,20 @@ namespace multilinear {
 
 		Var selon;
 		Cnf* def_selon;
+		//Circuit* circ_selon;
 		Var selval;
 		Cnf* def_selval;
+		//Circuit* circ_selval;
 
 		Var ancestor;
 		Cnf* def_ancestor;
+		//Circuit* circ_ancestor;
 		Var xselval0;
 		Cnf* def_xselval0;
+		//Circuit* circ_xselval0;
 		Var xselval1;
 		Cnf* def_xselval1;
-	
+		//Circuit* circ_xselval1;
 
 		IndexLine() {
 			//is_tautological_defined = 0;
@@ -60,14 +68,19 @@ namespace multilinear {
 			memberships = new LinkL < IndexLit>;
 			//def_tautological = new Cnf;
 			def_selon = new Cnf;
+			//circ_selon = new Circuit;
 			def_selval = new Cnf;
+			//circ_selon = new Circuit;
 
-			ancestor = 0;;
+			ancestor = 0;
 			def_ancestor = new Cnf;
-			xselval0 = 0;;
+			//circ_ancestor = new Circuit;
+			xselval0 = 0;
 			def_xselval0 = new Cnf;
-			xselval1 = 0;;
+			//circ_xselval0 = new Circuit;
+			xselval1 = 0;
 			def_xselval1 = new Cnf;
+			//circ_xselval1 = new Circuit;
 		}
 	};
 
@@ -76,12 +89,15 @@ namespace multilinear {
 		bool is_strategy_defined;
 		Var strategy;
 		Cnf* def_strategy;
+		//Circuit* circ_strategy;
 		LinkL<int>* axioms;
+		LinkL<int>* ucommitments;
 
 		IndexStrat() {
 			is_strategy_defined = 0;
 			strategy = 0;
 			def_strategy = new Cnf;
+			//circ_strategy = new Circuit;
 
 			axioms = new LinkL <int>;
 		}
@@ -90,6 +106,8 @@ namespace multilinear {
 	struct Strategy_Extractor {
 		QCNF* input_QBF;
 		ClausalProof* input_proof;
+		Cnf* extension_clauses;
+		Cnf* negated_assumptions;
 		Cnf* output_cnf;
 		QRAT_Proof* output_QRAT;
 		LinkL<LinkL<IndexLine>>* main_index;
@@ -101,6 +119,9 @@ namespace multilinear {
 		Strategy_Extractor() {
 			input_QBF = new QCNF;
 			input_proof = new ClausalProof;
+			extension_clauses = new Cnf;
+			negated_assumptions = new Cnf;
+			output_cnf = new Cnf;
 			output_cnf = new Cnf;
 			output_QRAT = new QRAT_Proof();
 			main_index = new LinkL<LinkL<IndexLine>>;
@@ -111,16 +132,24 @@ namespace multilinear {
 		}
 		Strategy_Extractor(QCNF* phi, ClausalProof* pi) {
 			input_QBF = new QCNF();
-			input_QBF->matrix = copy(phi->matrix);
+			input_QBF->matrix = ccopy(phi->matrix);
 			input_QBF->prefix = copy(phi->prefix);
 			input_proof = pi;
 			output_cnf = new Cnf;
-			copyinto(output_cnf, &(phi->matrix));
+			extension_clauses = new Cnf;
+			negated_assumptions = new Cnf;
 			output_QRAT = new QRAT_Proof();
 			output_QRAT->Phi = *input_QBF;
-			base_max_var = phi->matrix.max_var();
+			base_max_var = phi->matrix.mvar;
 			idx_max_var = base_max_var;
 			long_prefix = new Prefix;
+		}
+
+		void load_output_cnf_negated() {
+			output_cnf->makeempty();
+			copyinto(output_cnf, &(input_QBF->matrix));
+			copyinto(output_cnf, extension_clauses);
+			copyinto(output_cnf, negated_assumptions);
 		}
 	};
 
@@ -1304,13 +1333,13 @@ namespace multilinear {
 			while (current != NULL) {
 				//load all clauses systematically
 				IndexLine lineindex = SE->main_index->operator[](i).operator[](current->data);
-				SE->output_cnf->add_comment("Defining restricted proof line:");
-				SE->output_cnf->add_comment("selon:");
+				output->add_comment("Defining restricted proof line:");
+				output->add_comment("selon:");
 				copyinto(output, lineindex.def_selon);
-				SE->output_cnf->add_comment("selval:");
+				output->add_comment("selval:");
 				copyinto(output, lineindex.def_selval);
 
-				SE->output_cnf->add_comment("membership:");
+				output->add_comment("membership:");
 				Link1<IndexLit>* litindex = lineindex.memberships->head;
 				while (litindex != NULL) {
 					copyinto(output, litindex->data.def_membership);
@@ -1321,13 +1350,13 @@ namespace multilinear {
 			}
 			current = connected_lines->head;
 			while (current != NULL) {
-				SE->output_cnf->add_comment("Defining connectivity from a_base");
+				output->add_comment("Defining connectivity from a_base");
 				IndexLine lineindex = SE->main_index->operator[](i).operator[](current->data);
-				SE->output_cnf->add_comment("anc:");
+				output->add_comment("anc:");
 				copyinto(output, lineindex.def_ancestor);
-				SE->output_cnf->add_comment("exselval0:");
+				output->add_comment("exselval0:");
 				copyinto(output, lineindex.def_xselval0);
-				SE->output_cnf->add_comment("exselval1:");
+				output->add_comment("exselval1:");
 				copyinto(output, lineindex.def_xselval1);
 				current = current->next;
 			}
@@ -1385,7 +1414,7 @@ namespace multilinear {
 		QRAT_Proof* qrat = SE->output_QRAT;
 		while (current_u != NULL) {
 			if (current_u->data.u == u) {
-				SE->output_cnf->add_comment("Strategy clauses:");
+				SE->extension_clauses->add_comment("Strategy clauses:");
 				qrat->add_comment("Strategy clauses:");
 				int level = P.lvl(u) - 1;
 				Link1<int>* current_line = current_u->data.axioms->head;
@@ -1410,19 +1439,15 @@ namespace multilinear {
 				qrat->QRATA(stratlong, ul, "Long Strategy Clause");
 				//clauses not destined for qrat, only for propositional checks
 				//output->output_cnf->add_comment("equivalence clauses for universal");
-				copyinto(SE->output_cnf, current_u->data.def_strategy);
+				copyinto(SE->extension_clauses, current_u->data.def_strategy);
 				Clause uforward;
 				uforward.addnode(-ul);
 				uforward.addnode(Lit(u));
-				if (is_unsat) {
-					SE->output_cnf->addnode(uforward);//not acceptable in QRAT
-				}
+				SE->negated_assumptions->addnode(uforward);//not acceptable in QRAT
 				Clause ubackward;
 				ubackward.addnode(ul);
 				ubackward.addnode(-Lit(u));
-				if (is_unsat) {
-					SE->output_cnf->addnode(ubackward);//not acceptable in QRAT
-				}
+				SE->negated_assumptions->addnode(ubackward);//not acceptable in QRAT
 			}
 			current_u = current_u->next;
 		}
@@ -1536,7 +1561,7 @@ namespace multilinear {
 
 	Strategy_Extractor* Extract(QCNF* phi, ClausalProof* pi, int a_base, bool is_unsat) {//copy for a_base inclusion, also attempts to avoid stack overflow
 		Strategy_Extractor* output = new Strategy_Extractor(phi, pi);
-		*(output->output_cnf) = copy(phi->matrix);
+		//*(output->output_cnf) = copy(phi->matrix);
 		output->main_index = new LinkL<LinkL<IndexLine>>;
 		output->strategy_index = new LinkL<IndexStrat>;
 		int max_var = output->base_max_var;
@@ -1545,13 +1570,13 @@ namespace multilinear {
 		LinkL<int>* backwards_list = connectedlines(pi, a_base);
 		max_var = add_layer(max_var, output->main_index, output->long_prefix, pi);
 		def_layer(output, output->main_index, output->input_QBF->prefix, pi, layer_level, a_base, backwards_list);
-		while_load(output->output_cnf, output, a_base, layer_level, backwards_list);
+		while_load(output->extension_clauses, output, a_base, layer_level, backwards_list);
 		while (currentQ != NULL) {
 			if (currentQ->data.is_universal) {// add strategy
 				max_var = add_universal(max_var, output->strategy_index, output->long_prefix, pi, currentQ->data.var);
 				def_universal(output, output->strategy_index, currentQ->data.var, a_base, is_unsat);
 				if (is_last_universal(currentQ)) {
-					negatebase(output->output_cnf, output, a_base, is_unsat);
+					negatebase(output->negated_assumptions, output, a_base, is_unsat);
 					output->idx_max_var = max_var;
 					return output;
 				}
@@ -1578,19 +1603,23 @@ namespace multilinear {
 				layer_level++;
 				max_var = add_layer(max_var, output->main_index, output->long_prefix, pi);
 				def_layer(output, output->main_index, output->input_QBF->prefix, pi, layer_level, a_base, backwards_list);
-				while_load(output->output_cnf, output, a_base, layer_level, backwards_list);
+				while_load(output->extension_clauses, output, a_base, layer_level, backwards_list);
 			}
 				currentQ = currentQ->next;
 		}
 
-		negatebase(output->output_cnf, output, a_base, is_unsat);
+		negatebase(output->negated_assumptions, output, a_base, is_unsat);
 		output->idx_max_var = max_var;
 		return output;
 	}
 
+	
+
+
+
 	Strategy_Extractor* Extract(QCNF* phi, ClausalProof* pi) {
 		Strategy_Extractor* output = new Strategy_Extractor(phi, pi);
-		*(output->output_cnf) = copy(phi->matrix);
+		*(output->output_cnf) = ccopy(phi->matrix);
 		output->main_index = new LinkL<LinkL<IndexLine>>;
 		output->strategy_index = new LinkL<IndexStrat>;
 		int max_var = output->base_max_var;

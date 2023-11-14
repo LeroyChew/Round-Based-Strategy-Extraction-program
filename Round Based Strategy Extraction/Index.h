@@ -490,8 +490,9 @@ namespace idx {
 
 		Index(QCNF phi, ClausalProof* pi) {
 			idx_prefix = new Prefix();
-			base_max_var = phi.matrix.max_var();
-			Idx_Proof = new LinkL<LinkL<Index1> >;
+			phi.matrix.update_max_var();
+			base_max_var = phi.matrix.mvar;
+			Idx_Proof = new LinkL<LinkL<Index1>>;
 			Idx_Conn = new LinkL<LinkL<LinkL<Index2>>>;
 			Idx_Strategy = new LinkL<Index3>;
 			int max_var = base_max_var;
